@@ -44,6 +44,11 @@ namespace GeoInt.Persistance.MongoDb.Repository
             await _collection.ReplaceOneAsync(filter, entity);
         }
 
+        public async Task BulkAddAsync(IEnumerable<TEntity> entities)
+        {
+            await _collection.InsertManyAsync(entities);
+        }
+
         public async Task DeleteAsync(TEntity entity)
         {
             var filter = Builders<TEntity>.Filter.Eq(e => e.Id, entity.Id);

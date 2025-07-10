@@ -43,6 +43,12 @@ namespace GeoInt.Persistance.SqlServer.Repository
             await _context.SaveChangesAsync();
         }
 
+        public async Task BulkAddAsync(IEnumerable<TodoEntity> entities)
+        {
+            await _context.Todos.AddRangeAsync(entities);
+            await _context.SaveChangesAsync();
+        }
+
         public async Task DeleteAsync(TodoEntity entity)
         {
             _context.Todos.Remove(entity);

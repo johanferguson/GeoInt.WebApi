@@ -46,6 +46,12 @@ namespace GeoInt.Persistance.PostGis.Repository
             await _dbContext.SaveChangesAsync();
         }
 
+        public async Task BulkAddAsync(IEnumerable<TEntity> entities)
+        {
+            await _dbSet.AddRangeAsync(entities);
+            await _dbContext.SaveChangesAsync();
+        }
+
         public async Task DeleteAsync(TEntity entity)
         {
             _dbSet.Remove(entity);

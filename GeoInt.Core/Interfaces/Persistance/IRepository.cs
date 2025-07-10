@@ -12,6 +12,7 @@ namespace GeoInt.Core.Interfaces.Persistance
         Task<TEntity?> GetByIdAsync(Guid id);
         Task<IEnumerable<TEntity>> GetAllAsync();
         Task AddAsync(TEntity entity);
+        Task BulkAddAsync(IEnumerable<TEntity> entities);
         Task UpdateAsync(TEntity entity);
         Task DeleteAsync(TEntity entity);
     }
