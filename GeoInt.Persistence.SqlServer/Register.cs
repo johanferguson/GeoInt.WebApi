@@ -1,5 +1,6 @@
 ﻿using GeoInt.Core.Interfaces.Persistance;
 using GeoInt.Domain.Todo.Entities;
+using GeoInt.Domain.POI.Entities;
 using GeoInt.Persistance.SqlServer.Context;
 using GeoInt.Persistance.SqlServer.Repository;
 
@@ -18,6 +19,7 @@ namespace GeoInt.Persistance.SqlServer
 
             //services.AddScoped(typeof(IRepository<>), typeof(Repository.Repository<>));
             services.AddScoped<IRepository<TodoEntity>, TodoRepository>();
+            services.AddScoped<IRepository<POIEntity>, POIRepository>();
 
             return services;
         }

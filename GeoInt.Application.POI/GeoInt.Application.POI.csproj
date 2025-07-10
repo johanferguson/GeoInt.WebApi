@@ -6,4 +6,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\GeoInt.Application\GeoInt.Application.csproj" />
+    <ProjectReference Include="..\GeoInt.Domain.POI\GeoInt.Domain.POI.csproj" />
+  </ItemGroup>
+
 </Project>

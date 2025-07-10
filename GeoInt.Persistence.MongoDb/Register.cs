@@ -1,4 +1,5 @@
 ﻿using GeoInt.Core.Interfaces.Persistance;
+using GeoInt.Domain.POI.Entities;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,7 @@ namespace GeoInt.Persistance.MongoDb
                 sp.GetRequiredService<IMongoClient>().GetDatabase(configuration["MongoDbDatabase"]));
 
             services.AddScoped(typeof(IRepository<>), typeof(Repository.Repository<>));
+            services.AddScoped<IRepository<POIEntity>, Repository.POIRepository>();
             return services;
         }
     }

@@ -1,5 +1,6 @@
 using GeoInt.Domain;
 using GeoInt.Domain.Todo.Entities;
+using GeoInt.Domain.POI.Entities;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -15,6 +16,7 @@ namespace GeoInt.Persistance.PostGis.Context
         }
 
         public DbSet<TodoEntity> Todos { get; set; }
+        public DbSet<POIEntity> POIs { get; set; }
         
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
