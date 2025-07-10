@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace GeoInt.Application.POI.Features.Commands
 {
-    public class CreatePOIsCommand
+    public class CreateBulkPOICommand
     {
 
     }
