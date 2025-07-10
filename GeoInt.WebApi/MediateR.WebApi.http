@@ -1,0 +1,6 @@
+@GeoInt.WebApi_HostAddress = http://localhost:5008
+
+GET {{GeoInt.WebApi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
