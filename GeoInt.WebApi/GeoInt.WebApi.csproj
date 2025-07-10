@@ -32,8 +32,9 @@
     <ProjectReference Include="..\GeoInt.Application.Todo\GeoInt.Application.Todo.csproj" />
     <ProjectReference Include="..\GeoInt.Core\GeoInt.Core.csproj" />
     <ProjectReference Include="..\GeoInt.Domain.Todo\GeoInt.Domain.Todo.csproj" />
-    <ProjectReference Include="..\GeoInt.Persistence.MongoDb\GeoInt.Persistence.MongoDb.csproj" />
-    <ProjectReference Include="..\GeoInt.Persistence.SqlServer\GeoInt.Persistence.SqlServer.csproj" />
+    <ProjectReference Include="..\GeoInt.Persistance.PostGis\GeoInt.Persistance.PostGis.csproj" />
+    <ProjectReference Include="..\GeoInt.Persistence.MongoDb\GeoInt.Persistance.MongoDb.csproj" />
+    <ProjectReference Include="..\GeoInt.Persistence.SqlServer\GeoInt.Persistance.SqlServer.csproj" />
   </ItemGroup>
 
 </Project>

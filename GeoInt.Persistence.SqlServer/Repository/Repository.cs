@@ -1,6 +1,6 @@
 ﻿using GeoInt.Core;
 using GeoInt.Core.Interfaces.Persistance;
-using GeoInt.Persistence.SqlServer.Context;
+using GeoInt.Persistance.SqlServer.Context;
 
 using Microsoft.EntityFrameworkCore;
 
@@ -10,7 +10,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GeoInt.Persistence.SqlServer.Repository
+namespace GeoInt.Persistance.SqlServer.Repository
 {
     public class Repository<TEntity> : IRepository<TEntity>
         where TEntity : class, IEntity<Guid>

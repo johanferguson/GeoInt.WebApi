@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GeoInt.Persistence.MongoDb.Repository
+namespace GeoInt.Persistance.MongoDb.Repository
 {
     public class Repository<TEntity> : IRepository<TEntity>
         where TEntity : class, IEntity<Guid>

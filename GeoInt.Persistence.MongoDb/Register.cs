@@ -11,11 +11,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace GeoInt.Persistence.MongoDb
+namespace GeoInt.Persistance.MongoDb
 {
     public static class Register
     {
-        public static IServiceCollection AddMongoDbPersistence(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddMongoDbPersistance(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddSingleton<IMongoClient>(sp =>
                 new MongoClient(configuration.GetConnectionString("MongoDb")));

@@ -1,18 +1,18 @@
 ﻿using GeoInt.Core.Interfaces.Persistance;
 using GeoInt.Domain.Todo.Entities;
-using GeoInt.Persistence.SqlServer.Context;
-using GeoInt.Persistence.SqlServer.Repository;
+using GeoInt.Persistance.SqlServer.Context;
+using GeoInt.Persistance.SqlServer.Repository;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 
-namespace GeoInt.Persistence.SqlServer
+namespace GeoInt.Persistance.SqlServer
 {
     public static class Register
     {
-        public static IServiceCollection AddSqlServerPersistence(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddSqlServerPersistance(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddDbContext<AppDbContext>(options => options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
 

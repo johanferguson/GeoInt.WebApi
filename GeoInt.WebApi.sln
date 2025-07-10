@@ -7,15 +7,17 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeoInt.WebApi", "GeoInt.Web
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeoInt.Application", "GeoInt.Application\GeoInt.Application.csproj", "{5D899EF5-CCBA-4556-896B-98D7DC43EB93}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeoInt.Persistence.SqlServer", "GeoInt.Persistence.SqlServer\GeoInt.Persistence.SqlServer.csproj", "{C550C277-00EB-41DC-9647-8B9DE29A6672}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeoInt.Persistance.SqlServer", "GeoInt.Persistence.SqlServer\GeoInt.Persistance.SqlServer.csproj", "{C550C277-00EB-41DC-9647-8B9DE29A6672}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeoInt.Persistence.MongoDb", "GeoInt.Persistence.MongoDb\GeoInt.Persistence.MongoDb.csproj", "{A00E2D21-064A-4FC6-82AB-EC5B726A45C2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeoInt.Persistance.MongoDb", "GeoInt.Persistence.MongoDb\GeoInt.Persistance.MongoDb.csproj", "{A00E2D21-064A-4FC6-82AB-EC5B726A45C2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeoInt.Application.Todo", "GeoInt.Application.Todo\GeoInt.Application.Todo.csproj", "{E1EDAE17-B425-4A82-B5FC-06AE20B09B3B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeoInt.Domain.Todo", "GeoInt.Domain.Todo\GeoInt.Domain.Todo.csproj", "{A80F9A3C-9FF0-41D9-A758-F11EE4A5CDE2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeoInt.Core", "GeoInt.Core\GeoInt.Core.csproj", "{45F18BAB-E71B-445C-9EB7-7371652ADE0A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GeoInt.Persistance.PostGis", "GeoInt.Persistance.PostGis\GeoInt.Persistance.PostGis.csproj", "{73F3BD2D-F789-4B25-B968-9CDFB901C374}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -111,6 +113,18 @@ Global
 		{45F18BAB-E71B-445C-9EB7-7371652ADE0A}.Release|x64.Build.0 = Release|Any CPU
 		{45F18BAB-E71B-445C-9EB7-7371652ADE0A}.Release|x86.ActiveCfg = Release|Any CPU
 		{45F18BAB-E71B-445C-9EB7-7371652ADE0A}.Release|x86.Build.0 = Release|Any CPU
+		{73F3BD2D-F789-4B25-B968-9CDFB901C374}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{73F3BD2D-F789-4B25-B968-9CDFB901C374}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{73F3BD2D-F789-4B25-B968-9CDFB901C374}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{73F3BD2D-F789-4B25-B968-9CDFB901C374}.Debug|x64.Build.0 = Debug|Any CPU
+		{73F3BD2D-F789-4B25-B968-9CDFB901C374}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{73F3BD2D-F789-4B25-B968-9CDFB901C374}.Debug|x86.Build.0 = Debug|Any CPU
+		{73F3BD2D-F789-4B25-B968-9CDFB901C374}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{73F3BD2D-F789-4B25-B968-9CDFB901C374}.Release|Any CPU.Build.0 = Release|Any CPU
+		{73F3BD2D-F789-4B25-B968-9CDFB901C374}.Release|x64.ActiveCfg = Release|Any CPU
+		{73F3BD2D-F789-4B25-B968-9CDFB901C374}.Release|x64.Build.0 = Release|Any CPU
+		{73F3BD2D-F789-4B25-B968-9CDFB901C374}.Release|x86.ActiveCfg = Release|Any CPU
+		{73F3BD2D-F789-4B25-B968-9CDFB901C374}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

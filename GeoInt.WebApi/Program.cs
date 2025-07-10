@@ -1,5 +1,5 @@
-﻿using GeoInt.Persistence.MongoDb;
-using GeoInt.Persistence.SqlServer;
+﻿using GeoInt.Persistance.MongoDb;
+using GeoInt.Persistance.SqlServer;
 using GeoInt.WebApi.Configuration;
 using GeoInt.WebApi.Routes.v1.Todos;
 using GeoInt.Application.Todo;
@@ -28,10 +28,10 @@ namespace GeoInt.WebApi
             var featureToggles = builder.Configuration.GetSection("FeatureToggles").Get<FeatureToggles>();
 
             if (featureToggles.UseSqlServer)
-                builder.Services.AddSqlServerPersistence(builder.Configuration);
+                builder.Services.AddSqlServerPersistance(builder.Configuration);
 
             if (featureToggles.UseMongoDb)
-                builder.Services.AddMongoDbPersistence(builder.Configuration);
+                builder.Services.AddMongoDbPersistance(builder.Configuration);
                         
             var app = builder.Build();
 

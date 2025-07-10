@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 
 
-namespace GeoInt.Persistence.SqlServer.Context
+namespace GeoInt.Persistance.SqlServer.Context
 {
     public class AppDbContext : DbContext
     {        
