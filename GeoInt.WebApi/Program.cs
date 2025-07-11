@@ -4,6 +4,9 @@ using GeoInt.WebApi.Configuration;
 using GeoInt.WebApi.Routes.v1.Todos;
 using GeoInt.Application.Todo;
 using GeoInt.Application;
+using GeoInt.WebApi.Routes.v1.POIs;
+using GeoInt.Application.POI;
+using GeoInt.Persistance.PostGis;
 
 
 namespace GeoInt.WebApi
@@ -14,12 +17,12 @@ namespace GeoInt.WebApi
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            builder.Services.AddAuthorization();
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
             builder.Services.AddApplicationLayer();
             builder.Services.AddTodoApplicationLayer();
+            builder.Services.AddPOIApplicationLayer();
 
             // Register feature toggles as options (optional, only if you need to inject FeatureToggles elsewhere)
             builder.Services.Configure<FeatureToggles>(builder.Configuration.GetSection("FeatureToggles"));
@@ -33,27 +36,17 @@ namespace GeoInt.WebApi
             if (featureToggles.UseMongoDb)
                 builder.Services.AddMongoDbPersistance(builder.Configuration);
                         
+            if(featureToggles.UsePostGis)
+                builder.Services.AddPostGisPersistance(builder.Configuration);
+
             var app = builder.Build();
+                        
+            app.MapToDoEnpoints();
+            app.MapPOIEnpoints();
 
-            app.UseHttpsRedirection();
-            app.UseAuthorization();
+            app.UseSwagger();
+            app.UseSwaggerUI();
 
-            if (app.Environment.IsDevelopment())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI();
-            }
-            else if (app.Environment.IsStaging())
-            {
-                app.UseSwagger();
-                app.UseSwaggerUI(c =>
-                {
-                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
-                    c.RoutePrefix = "swagger";
-                });
-            }
-
-            app.MapEnpoints();
             app.Run();
         }
     }

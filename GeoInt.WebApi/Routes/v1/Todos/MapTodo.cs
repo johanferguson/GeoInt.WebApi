@@ -10,7 +10,7 @@ namespace GeoInt.WebApi.Routes.v1.Todos
 
     public static class Todo
     {
-        public static void MapEnpoints(this WebApplication app)
+        public static void MapToDoEnpoints(this WebApplication app)
         {
             app.MapGenericGetById<GetTodoByIdQuery, TodoEntity, TodoEntity>("/api/todos/{id}");
             app.MapGenericGetAll<GetAllTodosQuery, TodoEntity, TodoEntity>("/api/todos");
