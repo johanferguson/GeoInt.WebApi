@@ -21,6 +21,10 @@ namespace GeoInt.Application.POI
             services.AddScoped<IRequestHandler<GetPOIByIdQuery, POIEntity>, GetByIdHandler<GetPOIByIdQuery, POIEntity, POIEntity>>();
             services.AddScoped<IRequestHandler<GetAllPOIsQuery, IEnumerable<POIEntity>>, GetAllHandler<GetAllPOIsQuery, POIEntity, POIEntity>>();
 
+            // New export query registrations - same pattern as GetAllPOIsQuery
+            services.AddScoped<IRequestHandler<GetAllPOIsQueryAsCSV, IEnumerable<POIEntity>>, GetAllHandler<GetAllPOIsQueryAsCSV, POIEntity, POIEntity>>();
+            services.AddScoped<IRequestHandler<GetAllPOIsQueryAsGeoJson, IEnumerable<POIEntity>>, GetAllHandler<GetAllPOIsQueryAsGeoJson, POIEntity, POIEntity>>();
+
             services.AddScoped<IRequestHandler<CreatePOICommand, Guid>, AddCommandHandler<CreatePOICommand, POIEntity, Guid>>();
             services.AddScoped<IRequestHandler<UpdatePOICommand, Guid>, UpdateHandler<UpdatePOICommand, POIEntity, Guid>>();
             services.AddScoped<IRequestHandler<DeletePOICommand, Guid>, DeleteHandler<DeletePOICommand, POIEntity, Guid>>();
