@@ -1,0 +1,50 @@
+version: '3.8'
+
+# Development override for docker-compose.yml
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  # Development PostGIS with exposed ports for local tools
+  postgis:
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=poi
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=r00t01
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    volumes:
+      # Add volume mount for development data persistence
+      - ./dev-data:/var/lib/postgresql/data
+
+  # Development migration with verbose logging
+  db-migration:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+    command: >
+      sh -c "
+        echo 'DEV: Waiting for database to be ready...' &&
+        sleep 5 &&
+        echo 'DEV: Starting database migration with verbose logging...' &&
+        dotnet ef database update 
+          --project GeoInt.Persistance.PostGis 
+          --startup-project GeoInt.WebApi 
+          --configuration Release 
+          --verbose &&
+        echo 'DEV: Database migration completed successfully!'
+      "
+
+  # Development WebAPI with debug configuration
+  webapi:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      - Logging__LogLevel__Default=Information
+      - Logging__LogLevel__Microsoft.EntityFrameworkCore=Information
+    # Override health check for development
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/api/todos"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s 

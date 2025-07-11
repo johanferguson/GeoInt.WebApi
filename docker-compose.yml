@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+  # PostGIS Database
+  postgis:
+    image: postgis/postgis:15-3.3
+    container_name: geoint-postgis
+    environment:
+      POSTGRES_DB: poi
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: r00t01
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - geoint-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d poi"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Database Migration Init Container
+  db-migration:
+    build:
+      context: .
+      dockerfile: GeoInt.WebApi/Dockerfile.Migration
+    container_name: geoint-migration
+    environment:
+      - ConnectionStrings__PostGisConnection=Host=postgis;Database=poi;Username=postgres;Password=r00t01;
+      - FeatureToggles__UsePostGis=true
+      - FeatureToggles__UseSqlServer=false
+      - FeatureToggles__UseMongoDb=false
+    command: >
+      sh -c "
+        echo 'Waiting for database to be ready...' &&
+        sleep 10 &&
+        echo 'Starting database migration...' &&
+        dotnet ef database update 
+          --project GeoInt.Persistance.PostGis 
+          --startup-project GeoInt.WebApi 
+          --configuration Release &&
+        echo 'Database migration completed successfully!'
+      "
+    depends_on:
+      postgis:
+        condition: service_healthy
+    networks:
+      - geoint-network
+
+  # .NET WebAPI (starts after migration completes)
+  webapi:
+    build:
+      context: .
+      dockerfile: GeoInt.WebApi/Dockerfile
+    container_name: geoint-webapi
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__PostGisConnection=Host=postgis;Database=poi;Username=postgres;Password=r00t01;
+      - FeatureToggles__UsePostGis=true
+      - FeatureToggles__UseSqlServer=false
+      - FeatureToggles__UseMongoDb=false
+    ports:
+      - "5000:8080"
+    depends_on:
+      postgis:
+        condition: service_healthy
+      db-migration:
+        condition: service_completed_successfully
+    networks:
+      - geoint-network
+    restart: unless-stopped
+
+  # React Frontend (Future - commented out)
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   container_name: geoint-frontend
+  #   ports:
+  #     - "3000:80"
+  #   depends_on:
+  #     - webapi
+  #   networks:
+  #     - geoint-network
+  #   environment:
+  #     - REACT_APP_API_URL=http://webapi:8080
+
+volumes:
+  postgis_data:
+    driver: local
+
+networks:
+  geoint-network:
+    driver: bridge 

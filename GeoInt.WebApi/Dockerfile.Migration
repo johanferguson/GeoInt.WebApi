@@ -1,0 +1,36 @@
+# Migration-specific Dockerfile
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS migration
+
+WORKDIR /src
+
+# Copy solution and project files for better layer caching
+COPY *.sln .
+COPY GeoInt.WebApi/GeoInt.WebApi.csproj GeoInt.WebApi/
+COPY GeoInt.Core/GeoInt.Core.csproj GeoInt.Core/
+COPY GeoInt.Application/GeoInt.Application.csproj GeoInt.Application/
+COPY GeoInt.Application.POI/GeoInt.Application.POI.csproj GeoInt.Application.POI/
+COPY GeoInt.Application.Todo/GeoInt.Application.Todo.csproj GeoInt.Application.Todo/
+COPY GeoInt.Domain.POI/GeoInt.Domain.POI.csproj GeoInt.Domain.POI/
+COPY GeoInt.Domain.Todo/GeoInt.Domain.Todo.csproj GeoInt.Domain.Todo/
+COPY GeoInt.Persistance.PostGis/GeoInt.Persistance.PostGis.csproj GeoInt.Persistance.PostGis/
+COPY GeoInt.Persistence.MongoDb/GeoInt.Persistance.MongoDb.csproj GeoInt.Persistence.MongoDb/
+COPY GeoInt.Persistence.SqlServer/GeoInt.Persistance.SqlServer.csproj GeoInt.Persistence.SqlServer/
+
+# Install EF Core CLI tools globally
+RUN dotnet tool install --global dotnet-ef
+ENV PATH="$PATH:/root/.dotnet/tools"
+
+# Restore packages
+RUN dotnet restore
+
+# Copy source code
+COPY . .
+
+# Build the application (required for EF migrations)
+RUN dotnet build GeoInt.WebApi/GeoInt.WebApi.csproj -c Release
+
+# Set working directory
+WORKDIR /src
+
+# Default entry point for EF commands (will be overridden by docker-compose)
+ENTRYPOINT ["dotnet", "ef"] 
