@@ -1,6 +1,7 @@
 ﻿using GeoInt.Application.Features.Base.Commands.CreateCommand;
 using GeoInt.Application.Features.Base.Commands.BulkCreateCommand;
 using GeoInt.Application.POI.Features.Commands;
+using GeoInt.Application.POI.Features.Queries;
 using GeoInt.Core;
 using GeoInt.Domain;
 using GeoInt.Domain.POI.Entities;
@@ -192,6 +193,46 @@ namespace GeoInt.WebApi.Routes.Mapping
             }
 
             return entities;
+        }
+
+        // POI CSV Output (Text Response or File Download)
+        public static void MapPOIToCSV(this IEndpointRouteBuilder app, string route, bool downloadAsFile = false)
+        {
+            app.MapGet(route, async ([FromServices] IMediator mediator, HttpContext context) =>
+            {
+                var query = new GetAllPOIsQueryAsCSV();
+                var entities = await mediator.Send(query);
+                var csvContent = query.ConvertToCSV(entities);
+                
+                context.Response.ContentType = "text/csv";
+                
+                if (downloadAsFile)
+                {
+                    context.Response.Headers.Add("Content-Disposition", "attachment; filename=pois.csv");
+                }
+                
+                await context.Response.WriteAsync(csvContent);
+            });
+        }
+
+        // POI GeoJSON Output (Text Response or File Download)
+        public static void MapPOIToGeoJson(this IEndpointRouteBuilder app, string route, bool downloadAsFile = false)
+        {
+            app.MapGet(route, async ([FromServices] IMediator mediator, HttpContext context) =>
+            {
+                var query = new GetAllPOIsQueryAsGeoJson();
+                var entities = await mediator.Send(query);
+                var geoJsonContent = query.ConvertToGeoJson(entities);
+                
+                context.Response.ContentType = "application/geo+json";
+                
+                if (downloadAsFile)
+                {
+                    context.Response.Headers.Add("Content-Disposition", "attachment; filename=pois.geojson");
+                }
+                
+                await context.Response.WriteAsync(geoJsonContent);
+            });
         }
     }
 }
