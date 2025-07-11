@@ -16,14 +16,20 @@ namespace GeoInt.Application.POI.Features.Commands
             if (Entities != null)
                 return Entities;
                 
-            return POIs.Select(poi => new POIEntity
+            return POIs.Select(poi => 
             {
-                Id = Guid.NewGuid(),
-                Name = poi.Name,
-                Category = poi.Category,
-                Lat = poi.Lat,
-                Long = poi.Long,
-                created_at = DateTime.UtcNow
+                var entity = new POIEntity
+                {
+                    Id = Guid.NewGuid(),
+                    Name = poi.Name,
+                    Category = poi.Category,
+                    created_at = DateTime.UtcNow
+                };
+                
+                // Set location with spatial sync
+                entity.SetLocation(poi.Lat, poi.Long);
+                
+                return entity;
             });
         }
     }

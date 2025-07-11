@@ -23,12 +23,28 @@ namespace GeoInt.Persistance.PostGis.Repository
 
         public async Task<POIEntity?> GetByIdAsync(Guid id)
         {
-            return await _context.POIs.FindAsync(id);
+            var entity = await _context.POIs.FindAsync(id);
+            
+            // Populate Location for existing entity that doesn't have it
+            if (entity?.Location == null)
+            {
+                entity?.PopulateLocationFromCoordinates();
+            }
+            
+            return entity;
         }
 
         public async Task<IEnumerable<POIEntity>> GetAllAsync()
         {
-            return await _context.POIs.ToListAsync();
+            var entities = await _context.POIs.ToListAsync();
+            
+            // Populate Location for existing entities that don't have it
+            foreach (var entity in entities.Where(e => e.Location == null))
+            {
+                entity.PopulateLocationFromCoordinates();
+            }
+            
+            return entities;
         }
 
         public async Task AddAsync(POIEntity entity)

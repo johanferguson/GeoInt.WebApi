@@ -15,7 +15,9 @@ namespace GeoInt.Persistance.PostGis
     {
         public static IServiceCollection AddPostGisPersistance(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddDbContext<AppDbContext>(options => options.UseNpgsql(configuration.GetConnectionString("PostGisConnection")));
+            services.AddDbContext<AppDbContext>(options => 
+                options.UseNpgsql(configuration.GetConnectionString("PostGisConnection"),
+                    x => x.UseNetTopologySuite())); // Enable spatial support
 
             //services.AddScoped(typeof(IRepository<>), typeof(Repository.Repository<>));
             services.AddScoped<IRepository<TodoEntity>, TodoRepository>();

@@ -22,9 +22,10 @@ namespace GeoInt.Application.POI.Features.Commands
         {
             entity.Name = this.Name;
             entity.Category = this.Category;
-            entity.Lat = this.Lat;
-            entity.Long = this.Long;
             entity.modified_at = DateTime.UtcNow;
+            
+            // Set location with spatial sync
+            entity.SetLocation(this.Lat, this.Long);
         }
     }
 }

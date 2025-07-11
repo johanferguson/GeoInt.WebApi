@@ -15,15 +15,18 @@ namespace GeoInt.Application.POI.Features.Commands
         // This method is required by the interface. It maps the command to the domain entity.
         public POIEntity ToEntity()
         {
-            return new POIEntity
+            var entity = new POIEntity
             {
                 Id = Guid.NewGuid(),
                 Name = this.Name,
                 Category = this.Category,
-                Lat = this.Lat,
-                Long = this.Long,
                 created_at = DateTime.UtcNow
             };
+            
+            // Set location with spatial sync
+            entity.SetLocation(this.Lat, this.Long);
+            
+            return entity;
         }
     }
 }

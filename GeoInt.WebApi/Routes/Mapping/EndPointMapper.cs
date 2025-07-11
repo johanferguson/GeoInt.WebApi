@@ -101,62 +101,94 @@ namespace GeoInt.WebApi.Routes.Mapping
                 if (file.Length > 5 * 1024 * 1024) // 5MB limit
                     return Results.BadRequest("File size exceeds 5MB limit");
 
-                var entities = await ParseCsvToPOIEntities(file);
-                var command = new TCommand();
-                
-                // Set the entities on the command (assuming TCommand has Entities property)
-                if (command is BulkCreatePOICommand poiCommand)
+                try
                 {
-                    poiCommand.Entities = entities;
+                    var entities = await ParseCsvToPOIEntities(file);
+                    var command = new TCommand();
+                    
+                    // Set the entities on the command (assuming TCommand has Entities property)
+                    if (command is BulkCreatePOICommand poiCommand)
+                    {
+                        poiCommand.Entities = entities;
+                    }
+                    
+                    await mediator.Send(command);
+                    return Results.Ok(new { success = true, count = entities.Count() });
                 }
-                
-                await mediator.Send(command);
-                return Results.Ok(new { success = true, count = entities.Count() });
+                catch (Exception ex)
+                {
+                    return Results.BadRequest($"CSV processing error: {ex.Message}");
+                }
             }).DisableAntiforgery();
         }
 
         private static async Task<IEnumerable<POIEntity>> ParseCsvToPOIEntities(IFormFile file)
         {
             var entities = new List<POIEntity>();
-            var idx = 0;
-            try
+            var lineNumber = 0;
+
+            using var reader = new StreamReader(file.OpenReadStream());
+            using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+
+            // Read header
+            csv.Read();
+            csv.ReadHeader();
+            lineNumber++;
+
+            // Validate required headers exist
+            var headers = csv.HeaderRecord;
+            if (headers == null || !headers.Contains("Name") || !headers.Contains("Category") || 
+                !headers.Contains("Latitude") || !headers.Contains("Longitude"))
             {
-                using var reader = new StreamReader(file.OpenReadStream());
-                using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+                throw new InvalidOperationException("CSV must contain headers: Name, Category, Latitude, Longitude");
+            }
 
+            while (csv.Read())
+            {
+                lineNumber++;
                 
-
-                csv.Read();
-                csv.ReadHeader();
-
-
-                while (csv.Read())
+                try
                 {
-                    var cols = csv.ColumnCount;
-
-                    int colidx = 0;
-
-
-                    if (cols == 4)
+                    if (csv.ColumnCount == 4)
                     {
+                        // Validate and parse fields with proper error handling
+                        var name = csv.GetField<string>("Name")?.Trim();
+                        var category = csv.GetField<string>("Category")?.Trim();
+
+                        if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(category))
+                        {
+                            throw new InvalidOperationException($"Line {lineNumber}: Name and Category are required");
+                        }
+
+                        // Parse coordinates with validation
+                        if (!csv.TryGetField<double>("Latitude", out var latitude) ||
+                            !csv.TryGetField<double>("Longitude", out var longitude))
+                        {
+                            throw new InvalidOperationException($"Line {lineNumber}: Invalid latitude or longitude values");
+                        }
+
                         var entity = new POIEntity
                         {
                             Id = Guid.NewGuid(),
-                            Name = csv.GetField<string>("Name"),
-                            Category = csv.GetField<string>("Category"),
-                            Lat = csv.GetField<double>("Latitude"),
-                            Long = csv.GetField<double>("Longitude"),
+                            Name = name,
+                            Category = category,
                             created_at = DateTime.UtcNow
                         };
 
-                        idx++;
+                        // Set location with spatial sync
+                        entity.SetLocation(latitude, longitude);
                         entities.Add(entity);
-                    }                    
+                    }
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException($"Line {lineNumber}: {ex.Message}", ex);
                 }
             }
-            catch (Exception ex)
+
+            if (entities.Count == 0)
             {
-                var s = ex.Message;
+                throw new InvalidOperationException("No valid POI records found in CSV");
             }
 
             return entities;

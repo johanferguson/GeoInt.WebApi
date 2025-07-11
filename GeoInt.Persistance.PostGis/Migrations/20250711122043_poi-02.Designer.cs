@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using NetTopologySuite.Geometries;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
@@ -12,8 +13,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GeoInt.Persistance.PostGis.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250711114154_poi-01")]
-    partial class poi01
+    [Migration("20250711122043_poi-02")]
+    partial class poi02
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -23,6 +24,7 @@ namespace GeoInt.Persistance.PostGis.Migrations
                 .HasAnnotation("ProductVersion", "9.0.6")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "postgis");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("GeoInt.Domain.POI.Entities.POIEntity", b =>
@@ -37,6 +39,9 @@ namespace GeoInt.Persistance.PostGis.Migrations
 
                     b.Property<double>("Lat")
                         .HasColumnType("double precision");
+
+                    b.Property<Point>("Location")
+                        .HasColumnType("geometry(point,4326)");
 
                     b.Property<double>("Long")
                         .HasColumnType("double precision");
@@ -55,6 +60,10 @@ namespace GeoInt.Persistance.PostGis.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Location");
+
+                    NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Location"), "gist");
 
                     b.ToTable("POIs");
                 });
