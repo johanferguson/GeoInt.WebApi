@@ -1,5 +1,6 @@
 ﻿using GeoInt.Core;
 using NetTopologySuite.Geometries;
+using System.Text.Json.Serialization;
 
 
 namespace GeoInt.Domain.POI.Entities
@@ -14,14 +15,13 @@ namespace GeoInt.Domain.POI.Entities
         public double Lat { get; set; }
         public double Long { get; set; }
 
-        // Spatial property for PostGIS
+        [JsonIgnore]
         public Point? Location { get; set; }
 
         public DateTime created_at { get; set; }
         public DateTime? modified_at { get; set; }
         public DateTime? deleted_at { get; set; }
 
-        // Method to sync Location with Lat/Long
         public void SetLocation(double lat, double lng)
         {
             Lat = lat;
@@ -29,7 +29,6 @@ namespace GeoInt.Domain.POI.Entities
             Location = new Point(lng, lat) { SRID = 4326 };
         }
 
-        // Method to sync Lat/Long from Location
         public void SyncFromLocation()
         {
             if (Location != null)
@@ -39,7 +38,6 @@ namespace GeoInt.Domain.POI.Entities
             }
         }
 
-        // Method to populate Location from existing Lat/Long
         public void PopulateLocationFromCoordinates()
         {
             if (Location == null && Lat != 0 && Long != 0)
