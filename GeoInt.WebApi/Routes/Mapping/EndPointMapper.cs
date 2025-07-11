@@ -112,33 +112,53 @@ namespace GeoInt.WebApi.Routes.Mapping
                 
                 await mediator.Send(command);
                 return Results.Ok(new { success = true, count = entities.Count() });
-            });
+            }).DisableAntiforgery();
         }
 
         private static async Task<IEnumerable<POIEntity>> ParseCsvToPOIEntities(IFormFile file)
         {
-            using var reader = new StreamReader(file.OpenReadStream());
-            using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
-            
             var entities = new List<POIEntity>();
-            
-            csv.Read();
-            csv.ReadHeader();
-            
-            while (csv.Read())
+            var idx = 0;
+            try
             {
-                var entity = new POIEntity
+                using var reader = new StreamReader(file.OpenReadStream());
+                using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
+
+                
+
+                csv.Read();
+                csv.ReadHeader();
+
+
+                while (csv.Read())
                 {
-                    Id = Guid.NewGuid(),
-                    Name = csv.GetField<string>("Name"),
-                    Category = csv.GetField<string>("Category"),
-                    Lat = csv.GetField<double>("Lat"),
-                    Long = csv.GetField<double>("Long"),
-                    created_at = DateTime.UtcNow
-                };
-                entities.Add(entity);
+                    var cols = csv.ColumnCount;
+
+                    int colidx = 0;
+
+
+                    if (cols == 4)
+                    {
+                        var entity = new POIEntity
+                        {
+                            Id = Guid.NewGuid(),
+                            Name = csv.GetField<string>("Name"),
+                            Category = csv.GetField<string>("Category"),
+                            Lat = csv.GetField<double>("Latitude"),
+                            Long = csv.GetField<double>("Longitude"),
+                            created_at = DateTime.UtcNow
+                        };
+
+                        idx++;
+                        entities.Add(entity);
+                    }                    
+                }
             }
-            
+            catch (Exception ex)
+            {
+                var s = ex.Message;
+            }
+
             return entities;
         }
     }

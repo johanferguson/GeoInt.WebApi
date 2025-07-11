@@ -17,12 +17,15 @@ namespace GeoInt.WebApi
         {
             var builder = WebApplication.CreateBuilder(args);
 
+
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
             builder.Services.AddApplicationLayer();
             builder.Services.AddTodoApplicationLayer();
             builder.Services.AddPOIApplicationLayer();
+
+            builder.Services.AddAntiforgery(options => options.SuppressXFrameOptionsHeader = true);
 
             // Register feature toggles as options (optional, only if you need to inject FeatureToggles elsewhere)
             builder.Services.Configure<FeatureToggles>(builder.Configuration.GetSection("FeatureToggles"));
@@ -40,7 +43,12 @@ namespace GeoInt.WebApi
                 builder.Services.AddPostGisPersistance(builder.Configuration);
 
             var app = builder.Build();
-                        
+
+            app.UseRouting();
+
+            // Add Antiforgery support
+            app.UseAntiforgery();
+
             app.MapToDoEnpoints();
             app.MapPOIEnpoints();
 
