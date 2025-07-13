@@ -6,21 +6,26 @@ import { useNotifications } from './useNotifications'
 
 const poiService = new POIService(new POIRepository())
 
+// Singleton reactive state - shared across all usePOI() instances
+const pois = ref<POI[]>([])
+const isLoading = ref(false)
+const isCreating = ref(false)
+const isUpdating = ref(false)
+const isDeleting = ref(false)
+const isImporting = ref(false)
+const isLoadingGeoJson = ref(false)
+
 export function usePOI() {
   const { showError, showSuccess } = useNotifications()
-  
-  const pois = ref<POI[]>([])
-  const isLoading = ref(false)
-  const isCreating = ref(false)
-  const isUpdating = ref(false)
-  const isDeleting = ref(false)
-  const isImporting = ref(false)
-  const isLoadingGeoJson = ref(false)
 
   const loadPOIs = async () => {
     isLoading.value = true
     try {
-      pois.value = await poiService.getAllPOIs()
+      console.log('usePOI: Loading POIs from API...')
+      const loadedPOIs = await poiService.getAllPOIs()
+      console.log('usePOI: Loaded POIs:', loadedPOIs.length)
+      pois.value = loadedPOIs
+      console.log('usePOI: Reactive POI array updated with:', pois.value.length, 'POIs')
     } catch (error) {
       showError('Failed to load POIs')
       console.error('Error loading POIs:', error)
@@ -33,8 +38,10 @@ export function usePOI() {
     isCreating.value = true
     try {
       const newPOI = await poiService.createPOI(poi)
+      console.log('usePOI: Adding new POI to reactive array:', newPOI)
+      console.log('usePOI: POI count before:', pois.value.length)
       pois.value.push(newPOI)
-      showSuccess('POI created successfully')
+      console.log('usePOI: POI count after:', pois.value.length)
       return newPOI
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to create POI'
@@ -109,6 +116,27 @@ export function usePOI() {
     }
   }
 
+  // Convert reactive POI array to GeoJSON format for immediate use
+  const getPOIsAsGeoJsonFromArray = () => {
+    return {
+      type: 'FeatureCollection',
+      features: pois.value.map(poi => ({
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [poi.long, poi.lat]
+        },
+        properties: {
+          id: poi.id,
+          name: poi.name,
+          category: poi.category,
+          created_at: poi.created_at,
+          modified_at: poi.modified_at
+        }
+      }))
+    }
+  }
+
   return {
     pois,
     isLoading,
@@ -122,6 +150,7 @@ export function usePOI() {
     updatePOI,
     deletePOI,
     importFromCSV,
-    getPOIsAsGeoJson
+    getPOIsAsGeoJson,
+    getPOIsAsGeoJsonFromArray
   }
 } 

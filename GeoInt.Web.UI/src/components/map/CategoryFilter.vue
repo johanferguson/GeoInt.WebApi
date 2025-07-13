@@ -117,6 +117,7 @@ const categoryColors: Record<string, string> = {
   'government building': '#374151',
   management: '#6366f1',
   park: '#22c55e',
+  unknown: '#9ca3af',
   default: '#6b7280'
 }
 
@@ -124,7 +125,8 @@ const categories = computed(() => {
   const categoryMap = new Map<string, number>()
   
   pois.value.forEach(poi => {
-    const category = poi.category.toLowerCase()
+    // Handle null/undefined categories
+    const category = poi.category ? poi.category.toLowerCase() : 'unknown'
     categoryMap.set(category, (categoryMap.get(category) || 0) + 1)
   })
   
@@ -162,7 +164,9 @@ const selectCategory = (category: string | null) => {
 }
 
 const getCategoryCount = (categoryName: string): number => {
-  return pois.value.filter(poi => poi.category.toLowerCase() === categoryName.toLowerCase()).length
+  return pois.value.filter(poi => 
+    poi.category && poi.category.toLowerCase() === categoryName.toLowerCase()
+  ).length
 }
 
 const getFilteredCount = (): number => {
@@ -193,8 +197,13 @@ watch(() => pois.value.length, (newLength, oldLength) => {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
-  // Load POIs when component mounts
-  loadPOIs()
+  // Load POIs when component mounts (only if not already loaded)
+  if (pois.value.length === 0) {
+    console.log('CategoryFilter: Loading POIs since array is empty')
+    loadPOIs()
+  } else {
+    console.log('CategoryFilter: POIs already loaded, count:', pois.value.length)
+  }
 })
 
 onUnmounted(() => {

@@ -11,11 +11,17 @@ interface Props {
   map: any
   isMapLoaded: boolean
   selectedCategory?: string | null
+  isAddMode?: boolean
+}
+
+interface Emits {
+  (e: 'coordinates-selected', coordinates: [number, number]): void
 }
 
 const props = defineProps<Props>()
+const emit = defineEmits<Emits>()
 
-const { getPOIsAsGeoJson, isLoadingGeoJson, deletePOI } = usePOI()
+const { getPOIsAsGeoJson, isLoadingGeoJson, deletePOI, loadPOIs, pois, getPOIsAsGeoJsonFromArray } = usePOI()
 
 let geoJsonData: any = null
 let currentPopup: any = null
@@ -192,6 +198,9 @@ const confirmDeletePOI = async (poiId: string, poiName: string) => {
       currentPopup = null
     }
     
+    // Refresh the POI data in the composable (this will update CategoryFilter)
+    await loadPOIs()
+    
     // Refresh the POI layer to reflect the deletion (without auto-zoom)
     await addPOILayer(false)
     
@@ -351,6 +360,7 @@ const showToast = (message: string, type: 'success' | 'error' = 'success') => {
 ;(window as any).confirmDeletePOI = confirmDeletePOI
 ;(window as any).closeDeleteModal = closeDeleteModal
 ;(window as any).closeErrorModal = closeErrorModal
+;(window as any).showToast = showToast
 
 // Category colors mapping - same as in CategoryFilter
 const categoryColors: Record<string, string> = {
@@ -379,7 +389,7 @@ const categoryColors: Record<string, string> = {
   default: '#6b7280'
 }
 
-const addPOILayer = async (shouldAutoZoom: boolean = true) => {
+const addPOILayer = async (shouldAutoZoom: boolean = true, useReactiveData: boolean = false) => {
   if (!props.map || !props.isMapLoaded) {
     console.log('Map not ready:', { map: !!props.map, isMapLoaded: props.isMapLoaded })
     return
@@ -387,9 +397,14 @@ const addPOILayer = async (shouldAutoZoom: boolean = true) => {
 
   try {
     console.log('Loading POI GeoJSON data...')
-    // Load GeoJSON data
-    geoJsonData = await getPOIsAsGeoJson()
-    console.log('POI GeoJSON data loaded:', geoJsonData)
+    // Load GeoJSON data - use reactive data for immediate updates, API data for initial load
+    if (useReactiveData) {
+      geoJsonData = getPOIsAsGeoJsonFromArray()
+      console.log('POI GeoJSON data from reactive array:', geoJsonData)
+    } else {
+      geoJsonData = await getPOIsAsGeoJson()
+      console.log('POI GeoJSON data loaded from API:', geoJsonData)
+    }
     
     if (!geoJsonData || !geoJsonData.features || geoJsonData.features.length === 0) {
       console.warn('No POI data found or empty features array')
@@ -723,6 +738,18 @@ const addPOILayer = async (shouldAutoZoom: boolean = true) => {
       })
     }
 
+    // Add map click handler for adding POIs
+    const handleMapClick = (e: any) => {
+      if (props.isAddMode) {
+        const coordinates: [number, number] = [e.lngLat.lng, e.lngLat.lat]
+        console.log('Map clicked in add mode:', coordinates)
+        emit('coordinates-selected', coordinates)
+      }
+    }
+
+    // Add click handler to map
+    props.map.on('click', handleMapClick)
+
     console.log('POI layer setup complete')
 
   } catch (error) {
@@ -777,7 +804,7 @@ const updateFilter = () => {
 watch(() => props.isMapLoaded, (loaded) => {
   console.log('Map loaded state changed:', loaded)
   if (loaded) {
-    addPOILayer()
+    addPOILayer(true) // Auto-zoom on initial load
   }
 })
 
@@ -790,10 +817,21 @@ watch(() => props.selectedCategory, (newCategory, oldCategory) => {
   }, 50)
 }, { immediate: false })
 
+// Watch for POI data changes and refresh the layer
+watch(() => pois.value, (newPOIs, oldPOIs) => {
+  console.log('POI data changed, refreshing layer. New count:', newPOIs.length)
+  if (props.isMapLoaded && props.map) {
+    // Refresh the POI layer with reactive data for immediate update
+    setTimeout(() => {
+      addPOILayer(false, true) // false = don't auto-zoom, true = use reactive data
+    }, 100)
+  }
+}, { immediate: false, deep: true })
+
 onMounted(() => {
   console.log('POILayer mounted, map loaded:', props.isMapLoaded)
   if (props.isMapLoaded) {
-    addPOILayer()
+    addPOILayer(true) // Auto-zoom on initial mount
   }
 })
 
@@ -804,5 +842,6 @@ onUnmounted(() => {
   delete (window as any).confirmDeletePOI
   delete (window as any).closeDeleteModal
   delete (window as any).closeErrorModal
+  delete (window as any).showToast
 })
 </script> 
