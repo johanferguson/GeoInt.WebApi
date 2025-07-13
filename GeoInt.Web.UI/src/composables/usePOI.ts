@@ -37,8 +37,31 @@ export function usePOI() {
   const createPOI = async (poi: Omit<POI, 'id' | 'created_at' | 'modified_at' | 'deleted_at'>) => {
     isCreating.value = true
     try {
-      const newPOI = await poiService.createPOI(poi)
-      console.log('usePOI: Adding new POI to reactive array:', newPOI)
+      console.log('usePOI: Creating POI with data:', poi)
+      const apiResponse = await poiService.createPOI(poi)
+      console.log('usePOI: API returned:', apiResponse)
+      
+      // Handle case where API returns only ID (string) instead of full POI object
+      let newPOI: POI
+      if (typeof apiResponse === 'string') {
+        // API returned only ID, create the full POI object locally
+        console.log('usePOI: API returned only ID, creating full POI object locally')
+        newPOI = {
+          id: apiResponse,
+          name: poi.name,
+          category: poi.category,
+          lat: poi.lat,
+          long: poi.long,
+          created_at: new Date().toISOString(),
+          modified_at: undefined,
+          deleted_at: undefined
+        }
+      } else {
+        // API returned full POI object
+        newPOI = apiResponse
+      }
+      
+      console.log('usePOI: Final POI object:', newPOI)
       console.log('usePOI: POI count before:', pois.value.length)
       pois.value.push(newPOI)
       console.log('usePOI: POI count after:', pois.value.length)
@@ -118,23 +141,35 @@ export function usePOI() {
 
   // Convert reactive POI array to GeoJSON format for immediate use
   const getPOIsAsGeoJsonFromArray = () => {
-    return {
+    console.log('getPOIsAsGeoJsonFromArray: Converting', pois.value.length, 'POIs to GeoJSON')
+    const lastPOI = pois.value[pois.value.length - 1]
+    console.log('getPOIsAsGeoJsonFromArray: Last POI:', lastPOI)
+    console.log('getPOIsAsGeoJsonFromArray: Last POI coordinates:', { lat: lastPOI?.lat, long: lastPOI?.long })
+    const geoJson = {
       type: 'FeatureCollection',
-      features: pois.value.map(poi => ({
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: [poi.long, poi.lat]
-        },
-        properties: {
-          id: poi.id,
-          name: poi.name,
-          category: poi.category,
-          created_at: poi.created_at,
-          modified_at: poi.modified_at
+      features: pois.value.map(poi => {
+        const feature = {
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [poi.long, poi.lat]
+          },
+          properties: {
+            id: poi.id,
+            name: poi.name,
+            category: poi.category,
+            created_at: poi.created_at,
+            modified_at: poi.modified_at
+          }
         }
-      }))
+        return feature
+      })
     }
+    console.log('getPOIsAsGeoJsonFromArray: Generated GeoJSON with', geoJson.features.length, 'features')
+    const lastFeature = geoJson.features[geoJson.features.length - 1]
+    console.log('getPOIsAsGeoJsonFromArray: Last feature coordinates:', lastFeature.geometry.coordinates)
+    console.log('getPOIsAsGeoJsonFromArray: Last feature properties:', lastFeature.properties)
+    return geoJson
   }
 
   return {
