@@ -69,7 +69,7 @@ export function usePOI() {
     try {
       await poiService.deletePOI(id)
       pois.value = pois.value.filter(p => p.id !== id)
-      showSuccess('POI deleted successfully')
+      // Success notification now handled by caller
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to delete POI'
       showError('Failed to delete POI', message)

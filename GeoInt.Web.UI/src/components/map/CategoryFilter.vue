@@ -185,6 +185,12 @@ watch(() => selectedCategory.value, (newValue, oldValue) => {
   console.log('CategoryFilter: selectedCategory changed from', oldValue, 'to', newValue)
 })
 
+// Watch for POI changes to debug category updates
+watch(() => pois.value.length, (newLength, oldLength) => {
+  console.log('CategoryFilter: POI count changed from', oldLength, 'to', newLength)
+  console.log('CategoryFilter: Categories updated:', categories.value)
+})
+
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   // Load POIs when component mounts

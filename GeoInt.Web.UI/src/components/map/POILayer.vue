@@ -195,10 +195,13 @@ const confirmDeletePOI = async (poiId: string, poiName: string) => {
     // Refresh the POI layer to reflect the deletion (without auto-zoom)
     await addPOILayer(false)
     
+    // Show success toast
+    showToast(`"${poiName}" has been deleted successfully`, 'success')
+    
   } catch (error) {
     console.error('Error deleting POI:', error)
-    // Show error with modern styling
-    showErrorMessage('Failed to delete POI. Please try again.')
+    // Show error toast
+    showToast('Failed to delete POI. Please try again.', 'error')
   }
 }
 
@@ -241,6 +244,106 @@ const closeErrorModal = () => {
   if (modal) {
     modal.remove()
   }
+}
+
+const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+  // Remove any existing toast
+  const existingToast = document.getElementById('poi-toast')
+  if (existingToast) {
+    existingToast.remove()
+  }
+  
+  const toastColor = type === 'success' ? '#3b82f6' : '#ef4444'
+  const toastIcon = type === 'success' 
+    ? '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>'
+    : '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
+  
+  const toastHTML = `
+    <div id="poi-toast" class="poi-toast-container">
+      <div class="poi-toast-content">
+        <div class="poi-toast-icon" style="color: ${toastColor};">
+          ${toastIcon}
+        </div>
+        <span class="poi-toast-message">${message}</span>
+      </div>
+    </div>
+    
+    <style>
+      .poi-toast-container {
+        position: fixed;
+        top: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 20000;
+        animation: toastSlideIn 0.4s ease-out;
+      }
+      
+      @keyframes toastSlideIn {
+        from {
+          opacity: 0;
+          transform: translateX(-50%) translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
+      }
+      
+      @keyframes toastSlideOut {
+        from {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
+        to {
+          opacity: 0;
+          transform: translateX(-50%) translateY(-20px);
+        }
+      }
+      
+      .poi-toast-content {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 16px;
+        padding: 20px 28px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        min-width: 320px;
+        max-width: 500px;
+      }
+      
+      .poi-toast-icon {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      
+      .poi-toast-message {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1f2937;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        line-height: 1.4;
+      }
+    </style>
+  `
+  
+  // Add toast to page
+  document.body.insertAdjacentHTML('beforeend', toastHTML)
+  
+  // Auto-remove after 4 seconds
+  setTimeout(() => {
+    const toast = document.getElementById('poi-toast')
+    if (toast) {
+      toast.style.animation = 'toastSlideOut 0.3s ease-out'
+      setTimeout(() => {
+        toast.remove()
+      }, 300)
+    }
+  }, 4000)
 }
 
 // Make the functions globally available for onclick handlers
