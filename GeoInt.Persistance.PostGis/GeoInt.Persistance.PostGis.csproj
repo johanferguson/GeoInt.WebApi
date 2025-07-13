@@ -23,7 +23,6 @@
   <ItemGroup>
     <ProjectReference Include="..\GeoInt.Core\GeoInt.Core.csproj" />
     <ProjectReference Include="..\GeoInt.Domain.POI\GeoInt.Domain.POI.csproj" />
-    <ProjectReference Include="..\GeoInt.Domain.Todo\GeoInt.Domain.Todo.csproj" />
   </ItemGroup>
 
   <ItemGroup>

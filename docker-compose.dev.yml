@@ -9,7 +9,7 @@ services:
     ports:
       - "5432:5432"
     environment:
-      - POSTGRES_DB=poi
+      - POSTGRES_DB=POI
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=r00t01
       - POSTGRES_HOST_AUTH_METHOD=trust

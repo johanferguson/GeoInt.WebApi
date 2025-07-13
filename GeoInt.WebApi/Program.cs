@@ -1,8 +1,6 @@
 ﻿using GeoInt.Persistance.MongoDb;
 using GeoInt.Persistance.SqlServer;
 using GeoInt.WebApi.Configuration;
-using GeoInt.WebApi.Routes.v1.Todos;
-using GeoInt.Application.Todo;
 using GeoInt.Application;
 using GeoInt.WebApi.Routes.v1.POIs;
 using GeoInt.Application.POI;
@@ -23,7 +21,6 @@ namespace GeoInt.WebApi
             builder.Services.AddSwaggerGen();
 
             builder.Services.AddApplicationLayer();
-            builder.Services.AddTodoApplicationLayer();
             builder.Services.AddPOIApplicationLayer();
 
             builder.Services.AddAntiforgery(options => options.SuppressXFrameOptionsHeader = true);
@@ -56,7 +53,6 @@ namespace GeoInt.WebApi
             // Add Antiforgery support
             app.UseAntiforgery();
 
-            app.MapToDoEnpoints();
             app.MapPOIEnpoints();
 
             app.UseSwagger();
