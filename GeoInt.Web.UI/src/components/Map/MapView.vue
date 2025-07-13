@@ -2,6 +2,16 @@
   <div class="map-container">
     <div ref="mapContainer" class="map"></div>
     
+    <!-- Category Filter Dropdown -->
+    <div class="category-filter">
+      <select v-model="selectedCategory" @change="handleCategoryChange" class="category-select">
+        <option value="">All Categories</option>
+        <option v-for="category in uniqueCategories" :key="category" :value="category">
+          {{ category }}
+        </option>
+      </select>
+    </div>
+
     <!-- Add Point Button -->
     <button 
       @click="toggleAddMode"
@@ -23,393 +33,240 @@
       Click where you want to add the point
     </div>
 
-    <!-- Add POI Form Modal -->
-    <div v-if="showAddForm" class="add-form-overlay" @click="cancelAdd">
-      <div class="add-form-container" @click.stop>
-        <div class="add-form-header">
-          <h3>Add New POI</h3>
-          <button @click="cancelAdd" class="close-button">×</button>
-        </div>
-        
-        <form @submit.prevent="createPOI" class="add-form-body">
-          <div class="form-group">
-            <label for="poi-name" class="form-label">Name *</label>
-            <input
-              id="poi-name"
-              v-model="newPOI.name"
-              type="text"
-              class="form-control"
-              required
-              placeholder="Enter POI name"
-              ref="nameInput"
-            />
-          </div>
-          
-          <div class="form-group">
-            <label for="poi-category" class="form-label">Category *</label>
-            <input
-              id="poi-category"
-              v-model="newPOI.category"
-              type="text"
-              class="form-control"
-              required
-              placeholder="Enter category"
-            />
-          </div>
-          
-          <div class="coordinates-info">
-            <strong>Location:</strong> 
-            {{ newPOI.lat.toFixed(6) }}, {{ newPOI.long.toFixed(6) }}
-          </div>
-          
-          <div class="form-actions">
-            <button type="button" @click="cancelAdd" class="btn btn-secondary">
-              Cancel
-            </button>
-            <button type="submit" :disabled="saving" class="btn btn-primary">
-              <span v-if="saving" class="spinner"></span>
-              {{ saving ? 'Adding...' : 'Add POI' }}
-            </button>
-          </div>
-        </form>
-        
-        <div v-if="error" class="error-message">
-          {{ error }}
-        </div>
-      </div>
+    <!-- Loading Overlay -->
+    <div v-if="loading" class="loading-overlay">
+      <div class="spinner"></div>
+      <span>Loading POIs...</span>
     </div>
+
+    <!-- Error State -->
+    <div v-if="error" class="error-overlay">
+      <svg class="error-icon" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+      </svg>
+      <p>{{ error }}</p>
+      <button @click="handleRetry" class="btn btn-primary">Retry</button>
+    </div>
+
+    <!-- POI Form Modal -->
+    <POIForm 
+      v-if="showAddForm"
+      :poi="newPOI"
+      @save="handlePOISave"
+      @cancel="handleFormCancel"
+    />
+    
+    <!-- Message Box -->
+    <MessageBox 
+      ref="messageBoxRef"
+      :type="messageBoxType"
+      :title="messageBoxTitle"
+      :message="messageBoxMessage"
+      :show-cancel="messageBoxShowCancel"
+      :confirm-text="messageBoxConfirmText"
+      :cancel-text="messageBoxCancelText"
+      :confirm-button-type="messageBoxConfirmButtonType"
+      @confirm="handleMessageBoxConfirm"
+      @cancel="handleMessageBoxCancel"
+      @close="handleMessageBoxClose"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, nextTick } from 'vue';
-import maplibregl from 'maplibre-gl';
-import { poiApi } from '@/services/api';
-import { POI, CreatePOIRequest } from '@/types/poi';
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
+import { usePOIManagement } from '@/composables/usePOIManagement'
+import { useMapOperations } from '@/composables/useMapOperations'
+import { useMessageBox } from '@/utils/ui'
+import { CreatePOIRequest } from '@/types/poi'
+import POIForm from '@/components/POI/POIForm.vue'
+import MessageBox from '@/components/Common/MessageBox.vue'
 
-const mapContainer = ref<HTMLDivElement>();
-const nameInput = ref<HTMLInputElement>();
+// Template refs
+const mapContainer = ref<HTMLDivElement>()
+const messageBoxRef = ref<InstanceType<typeof MessageBox>>()
 
-let map: maplibregl.Map;
-let poisLoaded = false;
-let currentPopup: maplibregl.Popup | null = null;
+// Composables
+const poiManagement = usePOIManagement()
+const mapOperations = useMapOperations(mapContainer)
+const messageBox = useMessageBox()
 
-// Add POI functionality
-const isAddMode = ref(false);
-const showToast = ref(false);
-const showAddForm = ref(false);
-const saving = ref(false);
-const error = ref<string | null>(null);
+// Destructure POI management
+const {
+  pois,
+  loading,
+  error,
+  uniqueCategories,
+  loadPOIs,
+  createPOI,
+  deletePOI,
+  clearError
+} = poiManagement
 
-const newPOI = ref<CreatePOIRequest>({
-  name: '',
-  category: '',
-  lat: 0,
-  long: 0
-});
+// Destructure map operations
+const {
+  map,
+  mapLoaded,
+  selectedCategory,
+  isAddMode,
+  showToast,
+  showAddForm,
+  newPOI,
+  mapInitialized,
+  initializeMap,
+  updatePOIs,
+  filterPOIsByCategory,
+  toggleAddMode,
+  addMapClickListener,
+  removeMapClickListener,
+  closePopup,
+  destroyMap
+} = mapOperations
 
-// Add POI functions
-function toggleAddMode() {
-  isAddMode.value = !isAddMode.value;
+// Destructure message box
+const {
+  type: messageBoxType,
+  title: messageBoxTitle,
+  message: messageBoxMessage,
+  showCancel: messageBoxShowCancel,
+  confirmText: messageBoxConfirmText,
+  cancelText: messageBoxCancelText,
+  confirmButtonType: messageBoxConfirmButtonType,
+  showConfirmation,
+  showError,
+  showSuccess,
+  handleConfirm: handleMessageBoxConfirm,
+  handleCancel: handleMessageBoxCancel,
+  handleClose: handleMessageBoxClose
+} = messageBox
+
+// Event handlers
+const handleCategoryChange = () => {
+  filterPOIsByCategory(selectedCategory.value)
+}
+
+const handleRetry = async () => {
+  clearError()
+  await loadPOIs()
+}
+
+const handlePOISave = async (poiData: CreatePOIRequest) => {
+  const result = await createPOI(poiData)
   
-  if (isAddMode.value) {
-    showToast.value = true;
-    map.getCanvas().style.cursor = 'crosshair';
+  if (result.success) {
+    showAddForm.value = false
+    // Reset form data
+    newPOI.value = {
+      name: '',
+      category: '',
+      lat: 0,
+      long: 0
+    }
     
-    // Hide toast after 3 seconds
-    setTimeout(() => {
-      showToast.value = false;
-    }, 3000);
+    // Refresh POIs and update map
+    await loadPOIs()
+    updatePOIs(pois.value)
+    
+    await showSuccess('POI created successfully')
   } else {
-    showToast.value = false;
-    map.getCanvas().style.cursor = '';
-    cancelAdd();
+    await showError(result.error || 'Failed to create POI')
   }
 }
 
-function handleMapClick(e: any) {
-  if (!isAddMode.value) return;
-  
-  const { lng, lat } = e.lngLat;
-  
-  // Set coordinates
-  newPOI.value.lat = lat;
-  newPOI.value.long = lng;
-  newPOI.value.name = '';
-  newPOI.value.category = '';
-  
-  // Hide toast and show form
-  showToast.value = false;
-  showAddForm.value = true;
-  
-  // Focus on name input after modal appears
-  nextTick(() => {
-    nameInput.value?.focus();
-  });
-}
-
-async function createPOI() {
-  saving.value = true;
-  error.value = null;
-  
-  try {
-    await poiApi.createPOI(newPOI.value);
-    
-    // Success - reload POIs and reset
-    await loadPOIs();
-    cancelAdd();
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : 'Failed to create POI';
-  } finally {
-    saving.value = false;
-  }
-}
-
-function cancelAdd() {
-  isAddMode.value = false;
-  showToast.value = false;
-  showAddForm.value = false;
-  error.value = null;
-  map.getCanvas().style.cursor = '';
-  
-  // Reset form
+const handleFormCancel = () => {
+  showAddForm.value = false
   newPOI.value = {
     name: '',
     category: '',
     lat: 0,
     long: 0
-  };
+  }
 }
 
-async function handleDeletePOI(poiId: string) {
-  if (!confirm('Are you sure you want to delete this POI?')) return;
+const handleDeletePOI = async (poiId: string) => {
+  const poi = pois.value.find(p => p.id === poiId)
+  if (!poi) return
+  
+  const confirmed = await showConfirmation(
+    `Are you sure you want to delete "${poi.name}"?`,
+    'Delete POI',
+    {
+      confirmText: 'Delete',
+      confirmButtonType: 'danger'
+    }
+  )
+  
+  if (confirmed) {
+    const result = await deletePOI(poiId)
+    
+    if (result.success) {
+      // Close any open popups
+      closePopup()
+      
+      // Update map with new POI list
+      updatePOIs(pois.value)
+      
+      await showSuccess('POI deleted successfully')
+    } else {
+      await showError(result.error || 'Failed to delete POI')
+    }
+  }
+}
+
+// Initialize map and load POIs
+onMounted(async () => {
+  await nextTick()
   
   try {
-    await poiApi.deletePOI(poiId);
+    // Initialize map
+    initializeMap()
     
-    // Close the popup
-    if (currentPopup) {
-      currentPopup.remove();
-      currentPopup = null;
-    }
+    // Load POIs
+    await loadPOIs()
     
-    // Reload POIs to refresh the map
-    await loadPOIs();
-  } catch (err) {
-    console.error('Error deleting POI:', err);
-    alert('Failed to delete POI. Please try again.');
+    // Update map with POIs
+    updatePOIs(pois.value)
+    
+    // Add map click listener for adding POIs
+    addMapClickListener()
+    
+    // Add delete button event listener to document
+    document.addEventListener('click', handleDeleteButtonClick)
+    
+  } catch (error) {
+    console.error('Error initializing map:', error)
+    await showError('Failed to initialize map')
   }
-}
-
-onMounted(async () => {
-  if (!mapContainer.value) return;
-
-  // Initialize map with South Africa bounds
-  map = new maplibregl.Map({
-    container: mapContainer.value,
-    style: {
-      version: 8,
-      sources: {
-        'osm-tiles': {
-          type: 'raster',
-          tiles: [
-            'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
-          ],
-          tileSize: 256,
-          attribution: '© OpenStreetMap contributors'
-        }
-      },
-      layers: [
-        {
-          id: 'osm-tiles',
-          type: 'raster',
-          source: 'osm-tiles',
-          minzoom: 0,
-          maxzoom: 19
-        }
-      ]
-    },
-    center: [24.7461, -28.8166], // Center of South Africa
-    zoom: 5,
-    maxBounds: [
-      [16.3449, -34.8191], // Southwest coordinates
-      [32.8950, -22.1265]  // Northeast coordinates
-    ]
-  });
-
-  map.on('load', () => {
-    loadPOIs();
-  });
-
-  // Add click handler for adding POIs
-  map.on('click', handleMapClick);
-});
+})
 
 onUnmounted(() => {
-  if (map) {
-    map.off('click', handleMapClick);
-    map.remove();
-  }
-});
+  // Remove event listeners
+  removeMapClickListener()
+  document.removeEventListener('click', handleDeleteButtonClick)
+  
+  // Destroy map
+  destroyMap()
+})
 
-async function loadPOIs() {
-  try {
-    const pois = await poiApi.getAllPOIs();
-    
-    if (poisLoaded) {
-      // Remove existing layers and sources
-      if (map.getLayer('pois')) map.removeLayer('pois');
-      if (map.getSource('pois')) map.removeSource('pois');
+// Handle delete button clicks in popups
+const handleDeleteButtonClick = (event: Event) => {
+  const target = event.target as HTMLElement
+  if (target.classList.contains('delete-btn') || target.closest('.delete-btn')) {
+    const button = target.classList.contains('delete-btn') ? target : target.closest('.delete-btn')
+    const poiId = button?.getAttribute('data-poi-id')
+    if (poiId) {
+      handleDeletePOI(poiId)
     }
-
-    // Create GeoJSON source
-    const geojsonData = {
-      type: 'FeatureCollection' as const,
-      features: pois.map(poi => ({
-        type: 'Feature' as const,
-        geometry: {
-          type: 'Point' as const,
-          coordinates: [poi.long, poi.lat]
-        },
-        properties: {
-          id: poi.id,
-          name: poi.name,
-          category: poi.category,
-          created_at: poi.created_at
-        }
-      }))
-    };
-
-    // Add source and layer
-    map.addSource('pois', {
-      type: 'geojson',
-      data: geojsonData
-    });
-
-    map.addLayer({
-      id: 'pois',
-      type: 'circle',
-      source: 'pois',
-      paint: {
-        'circle-radius': 10,
-        'circle-color': '#2c3e50',
-        'circle-stroke-color': '#ffffff',
-        'circle-stroke-width': 3,
-        'circle-opacity': 0.9
-      }
-    });
-
-    // Add click handler with map popup
-    map.on('click', 'pois', (e) => {
-      if (e.features && e.features[0]) {
-        const feature = e.features[0];
-        const properties = feature.properties;
-        const coordinates = (feature.geometry as any).coordinates.slice();
-        
-        // Close existing popup
-        if (currentPopup) {
-          currentPopup.remove();
-        }
-        
-        // Create popup content
-        const popupContent = `
-          <div class="map-popup">
-            <div class="popup-title">
-              <svg class="popup-icon" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
-              </svg>
-              ${properties.name}
-            </div>
-            <div class="popup-details">
-              <div class="popup-row">
-                <span class="popup-label">Category:</span>
-                <span class="popup-value">${properties.category}</span>
-              </div>
-              <div class="popup-row">
-                <span class="popup-label">Location:</span>
-                <span class="popup-value">${coordinates[1].toFixed(6)}, ${coordinates[0].toFixed(6)}</span>
-              </div>
-              <div class="popup-row">
-                <span class="popup-label">Created:</span>
-                <span class="popup-value">${new Date(properties.created_at).toLocaleDateString()}</span>
-              </div>
-            </div>
-            <div class="popup-actions">
-              <button class="popup-delete-btn" data-poi-id="${properties.id}">
-                <svg class="btn-icon" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
-                </svg>
-                Delete
-              </button>
-            </div>
-          </div>
-        `;
-        
-        // Create and add popup
-        currentPopup = new maplibregl.Popup({
-          closeButton: true,
-          closeOnClick: false,
-          maxWidth: '300px'
-        })
-          .setLngLat(coordinates)
-          .setHTML(popupContent)
-          .addTo(map);
-        
-        // Add delete button event listener
-        const deleteBtn = document.querySelector('.popup-delete-btn');
-        if (deleteBtn) {
-          deleteBtn.addEventListener('click', async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const poiId = (e.target as HTMLElement).closest('.popup-delete-btn')?.getAttribute('data-poi-id');
-            if (poiId) {
-              await handleDeletePOI(poiId);
-            }
-          });
-        }
-      }
-    });
-
-    // Zoom to fit all POI points
-    if (pois.length > 0) {
-      const bounds = new maplibregl.LngLatBounds();
-      pois.forEach(poi => {
-        bounds.extend([poi.long, poi.lat]);
-      });
-      
-      map.fitBounds(bounds, {
-        padding: 50,
-        maxZoom: 12
-      });
-    }
-
-    // Change cursor on hover
-    map.on('mouseenter', 'pois', () => {
-      map.getCanvas().style.cursor = 'pointer';
-    });
-
-    map.on('mouseleave', 'pois', () => {
-      map.getCanvas().style.cursor = '';
-    });
-
-    poisLoaded = true;
-  } catch (error) {
-    console.error('Error loading POIs:', error);
   }
 }
-
-// Expose method to refresh POIs from parent
-defineExpose({
-  refreshPOIs: loadPOIs
-});
 </script>
 
 <style scoped>
 .map-container {
   position: relative;
+  height: 100vh;
   width: 100%;
-  height: 100%;
+  overflow: hidden;
 }
 
 .map {
@@ -417,7 +274,33 @@ defineExpose({
   height: 100%;
 }
 
-/* Add Point Button */
+.category-filter {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 1000;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  padding: 0.5rem;
+}
+
+.category-select {
+  padding: 0.5rem 1rem;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  background: white;
+  font-size: 0.875rem;
+  cursor: pointer;
+  min-width: 180px;
+}
+
+.category-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
 .add-point-btn {
   position: absolute;
   top: 20px;
@@ -427,17 +310,17 @@ defineExpose({
   color: white;
   border: none;
   border-radius: 8px;
-  padding: 0.75rem 1.25rem;
-  font-size: 0.9rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   display: flex;
   align-items: center;
   gap: 0.5rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  box-shadow: 0 4px 12px rgba(44, 62, 80, 0.3);
 }
 
 .add-point-btn:hover {
@@ -446,13 +329,14 @@ defineExpose({
 }
 
 .add-point-btn.active {
-  background: #e74c3c;
-  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  animation: pulse 2s infinite;
 }
 
-.add-point-btn.active:hover {
-  background: #c0392b;
-  box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
 }
 
 .btn-icon {
@@ -461,341 +345,217 @@ defineExpose({
   flex-shrink: 0;
 }
 
-/* Toast Notification */
 .toast-notification {
   position: absolute;
   top: 80px;
   right: 20px;
   z-index: 1000;
-  background: #2c3e50;
+  background: #28a745;
   color: white;
   padding: 1rem 1.5rem;
   border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
+  font-size: 0.875rem;
   font-weight: 500;
-  animation: slideIn 0.3s ease;
+  animation: slideInRight 0.3s ease;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 .toast-icon {
   width: 20px;
   height: 20px;
-  color: #3498db;
   flex-shrink: 0;
 }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(100%);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* Add Form Modal */
-.add-form-overlay {
-  position: fixed;
+.loading-overlay,
+.error-overlay {
+  position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(255, 255, 255, 0.9);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   z-index: 2000;
-}
-
-.add-form-container {
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  max-width: 500px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
-  border: 1px solid #e9ecef;
-}
-
-.add-form-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.5rem;
-  border-bottom: 1px solid #e9ecef;
-  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-}
-
-.add-form-header h3 {
-  margin: 0;
-  color: white;
-  font-size: 1.375rem;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
-
-.close-button {
-  background: none;
-  border: none;
-  font-size: 1.5rem;
-  cursor: pointer;
-  color: rgba(255, 255, 255, 0.8);
-  padding: 0;
-  width: 30px;
-  height: 30px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-}
-
-.close-button:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-}
-
-.add-form-body {
-  padding: 1.5rem;
-}
-
-.form-group {
-  margin-bottom: 1.5rem;
-}
-
-.form-label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 700;
-  color: #2c3e50;
-  font-size: 1rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.form-control {
-  width: 100%;
-  padding: 1rem;
-  border: 2px solid #dee2e6;
-  border-radius: 8px;
-  font-size: 1.1rem;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  background: #f8f9fa;
-  box-sizing: border-box;
-}
-
-.form-control:focus {
-  outline: none;
-  border-color: #2c3e50;
-  box-shadow: 0 0 0 3px rgba(44, 62, 80, 0.1);
-  background: white;
-}
-
-.coordinates-info {
-  background: #f8f9fa;
-  padding: 1rem;
-  border-radius: 6px;
-  margin-bottom: 1.5rem;
-  font-size: 0.9rem;
   color: #495057;
-  border-left: 4px solid #2c3e50;
-}
-
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  margin-top: 2rem;
-}
-
-.btn {
-  padding: 0.75rem 1.5rem;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-  color: white;
-}
-
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(44, 62, 80, 0.4);
-}
-
-.btn-secondary {
-  background: #f8f9fa;
-  color: #495057;
-  border: 1px solid #dee2e6;
-}
-
-.btn-secondary:hover {
-  background: #e9ecef;
-}
-
-.error-message {
-  padding: 1rem 1.5rem;
-  background: #f8d7da;
-  color: #721c24;
-  border-top: 1px solid #f1aeb5;
-  margin-top: 1rem;
+  text-align: center;
 }
 
 .spinner {
-  border: 2px solid transparent;
-  border-top: 2px solid currentColor;
+  width: 40px;
+  height: 40px;
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #2c3e50;
   border-radius: 50%;
-  width: 16px;
-  height: 16px;
   animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
 }
 
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+.error-overlay {
+  background: rgba(248, 249, 250, 0.95);
+}
+
+.error-icon {
+  width: 48px;
+  height: 48px;
+  color: #dc3545;
+  margin-bottom: 1rem;
+}
+
+.error-overlay p {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  color: #dc3545;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .category-filter,
+  .add-point-btn {
+    top: 10px;
+    font-size: 0.75rem;
+  }
+  
+  .category-filter {
+    left: 10px;
+  }
+  
+  .add-point-btn {
+    right: 10px;
+    padding: 0.5rem 1rem;
+  }
+  
+  .toast-notification {
+    top: 60px;
+    right: 10px;
+    font-size: 0.75rem;
+    padding: 0.75rem 1rem;
+  }
+  
+  .category-select {
+    min-width: 150px;
+    padding: 0.4rem 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .category-filter,
+  .add-point-btn {
+    position: static;
+    margin: 0.5rem;
+  }
+  
+  .map-container {
+    flex-direction: column;
+  }
+  
+  .map {
+    height: calc(100vh - 120px);
+  }
+  
+  .toast-notification {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    right: auto;
+    max-width: 80%;
+  }
+}
 </style>
 
 <style>
-/* Global styles for MapLibre popup */
-.maplibregl-popup-content {
-  padding: 0 !important;
-  border-radius: 12px !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
-  border: 1px solid #e9ecef !important;
+/* Global styles for map popups */
+.poi-popup {
+  min-width: 200px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
 }
 
-.maplibregl-popup-close-button {
-  font-size: 20px !important;
-  padding: 0 !important;
-  width: 25px !important;
-  height: 25px !important;
-  color: white !important;
-  background: rgba(44, 62, 80, 0.8) !important;
-  border-radius: 50% !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  right: 8px !important;
-  top: 8px !important;
-}
-
-.maplibregl-popup-close-button:hover {
-  background: rgba(44, 62, 80, 1) !important;
-}
-
-.map-popup {
-  min-width: 250px;
-}
-
-.popup-title {
-  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-  color: white;
-  padding: 1rem;
-  font-weight: 600;
-  font-size: 1.1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  letter-spacing: 0.5px;
-}
-
-.popup-icon {
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-}
-
-.popup-details {
-  padding: 1rem;
-  background: white;
-}
-
-.popup-row {
+.poi-popup-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 0.75rem;
-  font-size: 0.9rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e9ecef;
 }
 
-.popup-row:last-child {
-  margin-bottom: 0;
-}
-
-.popup-label {
+.poi-popup-header h3 {
+  margin: 0;
+  font-size: 1rem;
   font-weight: 600;
   color: #2c3e50;
+}
+
+.poi-category {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
   text-transform: uppercase;
-  font-size: 0.8rem;
   letter-spacing: 0.5px;
 }
 
-.popup-value {
+.poi-popup-content {
+  margin-bottom: 0.75rem;
   color: #495057;
-  text-align: right;
-  font-weight: 500;
+  font-size: 0.875rem;
 }
 
-.popup-actions {
-  padding: 0.75rem;
-  background: #f8f9fa;
-  border-top: 1px solid #e9ecef;
+.poi-popup-content p {
+  margin: 0.25rem 0;
 }
 
-.popup-delete-btn {
-  width: 100%;
+.poi-popup-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.delete-btn {
   background: #dc3545;
   color: white;
   border: none;
-  border-radius: 6px;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
-  font-weight: 600;
+  border-radius: 4px;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  gap: 0.25rem;
 }
 
-.popup-delete-btn:hover {
+.delete-btn:hover {
   background: #c82333;
   transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
 }
 
-.popup-delete-btn:active {
-  transform: translateY(0);
-}
-
-.popup-delete-btn .btn-icon {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
+.delete-btn svg {
+  width: 14px;
+  height: 14px;
 }
 </style> 
