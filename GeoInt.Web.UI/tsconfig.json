@@ -17,10 +17,16 @@
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+      "@/components/*": ["src/presentation/components/*"],
+      "@/views/*": ["src/presentation/views/*"],
+      "@/services/*": ["src/infrastructure/services/*"],
+      "@/business/*": ["src/business/*"],
+      "@/models/*": ["src/domain/models/*"],
+      "@/types/*": ["src/domain/types/*"],
+      "@/utils/*": ["src/shared/utils/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue"],
-  "exclude": ["node_modules", "dist"],
   "references": [{ "path": "./tsconfig.node.json" }]
 } 
