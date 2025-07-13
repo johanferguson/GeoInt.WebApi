@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans antialiased;
+  }
+}
+
+@layer components {
+  .geoint-gradient {
+    background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #60a5fa 100%);
+  }
+  
+  .geoint-gradient-header {
+    background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%);
+  }
+  
+  .sidebar-button {
+    @apply w-full px-6 py-4 text-left font-medium transition-all duration-200 hover:bg-geoint-100;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    background-color: transparent;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+  }
+  
+  .sidebar-button:focus,
+  .sidebar-button:active,
+  .sidebar-button:focus-visible {
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+  
+  .sidebar-button.active {
+    @apply bg-blue-100 text-blue-800;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+  
+  .sidebar-button.active:hover {
+    @apply bg-blue-200;
+  }
+  
+  .sidebar-button.active:focus,
+  .sidebar-button.active:active,
+  .sidebar-button.active:focus-visible {
+    @apply bg-blue-100 text-blue-800;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+  
+  .sidebar-button.inactive {
+    @apply text-slate-800 bg-white;
+  }
+} 
