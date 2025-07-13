@@ -20,6 +20,17 @@ namespace GeoInt.WebApi
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
+            // Add CORS
+            builder.Services.AddCors(options =>
+            {
+                options.AddDefaultPolicy(policy =>
+                {
+                    policy.WithOrigins("http://localhost:3000")
+                          .AllowAnyHeader()
+                          .AllowAnyMethod();
+                });
+            });
+
             builder.Services.AddApplicationLayer();
             builder.Services.AddPOIApplicationLayer();
 
@@ -49,6 +60,9 @@ namespace GeoInt.WebApi
             }
 
             app.UseRouting();
+
+            // Enable CORS
+            app.UseCors();
 
             // Add Antiforgery support
             app.UseAntiforgery();
