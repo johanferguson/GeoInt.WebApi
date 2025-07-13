@@ -22,7 +22,37 @@ services:
       retries: 5
       start_period: 30s
 
-  # .NET WebAPI with built-in migration
+  # Database Migration Service
+  db-migration:
+    build:
+      context: .
+      dockerfile: GeoInt.WebApi/Dockerfile
+      target: build
+    container_name: geoint-migration
+    environment:
+      - ConnectionStrings__PostGisConnection=Host=postgis;Database=POI;Username=postgres;Password=r00t01;
+      - FeatureToggles__UsePostGis=true
+      - FeatureToggles__UseSqlServer=false
+      - FeatureToggles__UseMongoDb=false
+    working_dir: /src
+    command: >
+      sh -c "
+        echo 'Installing EF Core tools...' &&
+        dotnet tool install --global dotnet-ef &&
+        echo 'Waiting for database to be ready...' &&
+        sleep 15 &&
+        echo 'Running database migrations...' &&
+        /root/.dotnet/tools/dotnet-ef database update --project GeoInt.Persistance.PostGis --startup-project GeoInt.WebApi --configuration Release &&
+        echo 'Database migration completed successfully!'
+      "
+    depends_on:
+      postgis:
+        condition: service_healthy
+    networks:
+      - geoint-network
+    restart: "no"
+
+  # .NET WebAPI
   webapi:
     build:
       context: .
@@ -40,6 +70,8 @@ services:
     depends_on:
       postgis:
         condition: service_healthy
+      db-migration:
+        condition: service_completed_successfully
     networks:
       - geoint-network
     restart: unless-stopped
