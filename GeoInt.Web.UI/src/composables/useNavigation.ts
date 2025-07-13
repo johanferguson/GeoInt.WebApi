@@ -1,10 +1,11 @@
 import { ref, computed } from 'vue'
 
-export type NavigationView = 'map' | 'pois'
+export type NavigationView = 'map' | 'pois' | 'test'
+
+// Create singleton state outside the composable
+const currentView = ref<NavigationView>('map')
 
 export function useNavigation() {
-  const currentView = ref<NavigationView>('map')
-  
   const setView = (view: NavigationView) => {
     currentView.value = view
   }
