@@ -1,5 +1,5 @@
 <template>
-  <div class="h-full bg-gray-50 flex flex-col">
+  <div class="bg-gray-50 flex flex-col">
     <!-- Header Section -->
     <div class="bg-white shadow-sm border-b border-gray-200">
       <div class="max-w-7xl mx-auto px-8 py-6">
@@ -36,9 +36,9 @@
     </div>
 
     <!-- Table Container with 80% Width -->
-    <div class="flex-1 overflow-hidden">
+    <div class="flex-1">
       <div class="w-4/5 mx-auto px-8 py-6">
-        <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+        <div class="bg-white rounded-xl shadow-lg border border-gray-200">
           <POITable />
         </div>
       </div>

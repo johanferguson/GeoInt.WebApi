@@ -9,7 +9,7 @@
       <AppSidebar />
       
       <!-- Main Content -->
-      <main class="flex-1 overflow-hidden">
+      <main class="flex-1 overflow-y-auto">
         <MapView v-if="currentView === 'map'" />
         <POIView v-if="currentView === 'pois'" />
         <TestView v-if="currentView === 'test'" />

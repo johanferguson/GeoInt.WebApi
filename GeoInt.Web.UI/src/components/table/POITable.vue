@@ -88,9 +88,9 @@
     </div>
 
     <!-- Table Content -->
-    <div v-else class="flex flex-col h-full">
+    <div v-else class="flex flex-col">
       <!-- Table -->
-      <div class="flex-1 overflow-x-auto overflow-y-auto">
+      <div class="flex-1 overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
           <!-- Table Header -->
           <thead class="bg-gray-50 sticky top-0 z-10">
@@ -183,33 +183,17 @@
 
       <!-- Pagination -->
       <div class="bg-white px-8 py-6 flex items-center justify-between border-t border-gray-200">
-        <div class="flex-1 flex justify-between sm:hidden">
-          <button
-            @click="previousPage"
-            :disabled="currentPage === 1"
-            class="relative inline-flex items-center px-6 py-3 border border-gray-300 text-lg font-semibold rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 transition-all duration-200"
-          >
-            Previous
-          </button>
-          <button
-            @click="nextPage"
-            :disabled="currentPage === totalPages"
-            class="ml-4 relative inline-flex items-center px-6 py-3 border border-gray-300 text-lg font-semibold rounded-lg text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 transition-all duration-200"
-          >
-            Next
-          </button>
-        </div>
-        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+        <div class="flex-1 flex items-center justify-between">
           <div class="flex items-center space-x-3">
             <span class="text-lg font-semibold text-gray-700">Show</span>
             <select
-              v-model="pageSize"
+              v-model.number="pageSize"
               class="form-select block w-24 px-4 py-2 text-lg border-gray-300 rounded-lg focus:outline-none focus:ring-geoint-500 focus:border-geoint-500 font-semibold"
             >
-              <option value="10">10</option>
-              <option value="20">20</option>
-              <option value="50">50</option>
-              <option value="100">100</option>
+              <option :value="10">10</option>
+              <option :value="20">20</option>
+              <option :value="50">50</option>
+              <option :value="100">100</option>
             </select>
             <span class="text-lg font-semibold text-gray-700">entries</span>
           </div>
@@ -571,8 +555,10 @@ const nextPage = () => {
   }
 }
 
-const goToPage = (page: number) => {
-  currentPage.value = page
+const goToPage = (page: number | string) => {
+  if (typeof page === 'number') {
+    currentPage.value = page
+  }
 }
 
 // Watch for page size changes and reset to page 1

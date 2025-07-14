@@ -13,7 +13,7 @@
 
     <!-- Name Column -->
     <td class="px-8 py-6 whitespace-nowrap">
-      <div v-if="!isEditing && !isAdding" class="text-xl font-bold text-gray-900">
+      <div v-if="!isEditing && !isAdding" class="text-xl text-gray-900">
         {{ poi?.name }}
       </div>
       <div v-else>
