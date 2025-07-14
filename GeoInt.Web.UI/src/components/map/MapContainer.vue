@@ -30,7 +30,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, defineExpose } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useMap } from '../../composables/useMap'
 import LoadingSpinner from '../common/LoadingSpinner.vue'
 
