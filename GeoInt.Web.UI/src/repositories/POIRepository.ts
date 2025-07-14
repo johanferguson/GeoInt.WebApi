@@ -2,7 +2,7 @@ import { IPOIRepository } from './IPOIRepository'
 import { POI } from '../entities/POI'
 
 export class POIRepository implements IPOIRepository {
-  private baseUrl = 'http://localhost:5008/api/pois'
+  private baseUrl = 'http://localhost:5000/api/pois'
 
   async getAll(): Promise<POI[]> {
     const response = await fetch(this.baseUrl)

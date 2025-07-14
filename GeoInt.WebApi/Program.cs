@@ -25,7 +25,7 @@ namespace GeoInt.WebApi
             {
                 options.AddDefaultPolicy(policy =>
                 {
-                    policy.WithOrigins("http://localhost:3000")
+                    policy.WithOrigins("http://localhost:3000", "http://localhost:5001")
                           .AllowAnyHeader()
                           .AllowAnyMethod();
                 });
