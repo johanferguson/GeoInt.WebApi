@@ -2,6 +2,7 @@ services:
   # PostGIS Database
   postgis:
     image: postgis/postgis:15-3.3
+    pull_policy: always
     container_name: geoint-postgis
     environment:
       POSTGRES_DB: POI
@@ -28,6 +29,7 @@ services:
       context: .
       dockerfile: GeoInt.WebApi/Dockerfile
       target: build
+      pull: true
     container_name: geoint-migration
     environment:
       - ConnectionStrings__PostGisConnection=Host=postgis;Database=POI;Username=postgres;Password=r00t01;
@@ -57,6 +59,7 @@ services:
     build:
       context: .
       dockerfile: GeoInt.WebApi/Dockerfile
+      pull: true
     container_name: geoint-webapi
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
@@ -82,20 +85,27 @@ services:
       retries: 3
       start_period: 40s
 
-  # React Frontend (Future - commented out)
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #     dockerfile: Dockerfile
-  #   container_name: geoint-frontend
-  #   ports:
-  #     - "3000:80"
-  #   depends_on:
-  #     - webapi
-  #   networks:
-  #     - geoint-network
-  #   environment:
-  #     - REACT_APP_API_URL=http://webapi:8080
+  # Vue.js Frontend
+  frontend:
+    build:
+      context: ./GeoInt.Web.UI
+      dockerfile: Dockerfile
+      pull: false
+    container_name: geoint-frontend
+    ports:
+      - "5001:80"
+    depends_on:
+      webapi:
+        condition: service_healthy
+    networks:
+      - geoint-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
 volumes:
   postgis_data:
