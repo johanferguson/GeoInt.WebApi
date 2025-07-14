@@ -187,13 +187,14 @@
           <div class="flex items-center space-x-3">
             <span class="text-lg font-semibold text-gray-700">Show</span>
             <select
-              v-model.number="pageSize"
+              v-model="pageSize"
+              @change="handlePageSizeChange"
               class="form-select block w-24 px-4 py-2 text-lg border-gray-300 rounded-lg focus:outline-none focus:ring-geoint-500 focus:border-geoint-500 font-semibold"
             >
-              <option :value="10">10</option>
-              <option :value="20">20</option>
-              <option :value="50">50</option>
-              <option :value="100">100</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
             </select>
             <span class="text-lg font-semibold text-gray-700">entries</span>
           </div>
@@ -202,7 +203,7 @@
               Showing
               <span class="font-bold text-geoint-600">{{ startIndex + 1 }}</span>
               to
-              <span class="font-bold text-geoint-600">{{ Math.min(startIndex + pageSize, filteredPOIs.length) }}</span>
+              <span class="font-bold text-geoint-600">{{ Math.min(startIndex + Number(pageSize), filteredPOIs.length) }}</span>
               of
               <span class="font-bold text-geoint-600">{{ filteredPOIs.length }}</span>
               results
@@ -353,7 +354,7 @@ const csvFileInput = ref<HTMLInputElement | null>(null)
 const sortField = ref<keyof POI | null>(null)
 const sortDirection = ref<'asc' | 'desc'>('asc')
 const currentPage = ref(1)
-const pageSize = ref(20)
+const pageSize = ref<number>(10)
 
 // Computed properties
 const filteredPOIs = computed(() => {
@@ -383,12 +384,16 @@ const filteredPOIs = computed(() => {
   return filtered
 })
 
-const totalPages = computed(() => Math.ceil(filteredPOIs.value.length / pageSize.value))
-const startIndex = computed(() => (currentPage.value - 1) * pageSize.value)
-const endIndex = computed(() => Math.min(startIndex.value + pageSize.value, filteredPOIs.value.length))
+const totalPages = computed(() => Math.ceil(filteredPOIs.value.length / Number(pageSize.value)))
+const startIndex = computed(() => (currentPage.value - 1) * Number(pageSize.value))
+const endIndex = computed(() => Math.min(startIndex.value + Number(pageSize.value), filteredPOIs.value.length))
 
 const paginatedPOIs = computed(() => {
-  return filteredPOIs.value.slice(startIndex.value, endIndex.value)
+  const size = Number(pageSize.value)
+  const start = (currentPage.value - 1) * size
+  const end = Math.min(start + size, filteredPOIs.value.length)
+  // Create a shallow copy to avoid affecting original data
+  return [...filteredPOIs.value].slice(start, end)
 })
 
 const isAllSelected = computed(() => {
@@ -561,10 +566,13 @@ const goToPage = (page: number | string) => {
   }
 }
 
-// Watch for page size changes and reset to page 1
-watch(pageSize, () => {
+const handlePageSizeChange = (event: Event) => {
+  const target = event.target as HTMLSelectElement
+  pageSize.value = Number(target.value)
   currentPage.value = 1
-})
+}
+
+// Page size changes are handled by handlePageSizeChange method
 
 // Watch for search changes and reset to page 1
 watch(searchTerm, () => {
@@ -573,7 +581,7 @@ watch(searchTerm, () => {
 
 // Watch for filtered POIs changes and adjust current page if needed
 watch(filteredPOIs, (newPOIs) => {
-  const maxPage = Math.ceil(newPOIs.length / pageSize.value)
+  const maxPage = Math.ceil(newPOIs.length / Number(pageSize.value))
   if (currentPage.value > maxPage && maxPage > 0) {
     currentPage.value = maxPage
   }

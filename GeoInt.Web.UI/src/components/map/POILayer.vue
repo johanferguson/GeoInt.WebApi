@@ -388,7 +388,7 @@ const categoryColors: Record<string, string> = {
 }
 
 const addPOILayer = async (shouldAutoZoom: boolean = true, useReactiveData: boolean = false) => {
-  if (!props.map || !props.isMapLoaded) {
+  if (!props.map || !props.isMapLoaded || !props.map.getSource || !props.map.getLayer || !props.map.addSource) {
     return
   }
 
@@ -401,6 +401,11 @@ const addPOILayer = async (shouldAutoZoom: boolean = true, useReactiveData: bool
     }
     
     if (!geoJsonData || !geoJsonData.features || geoJsonData.features.length === 0) {
+      return
+    }
+    
+    // Double-check map is still available after async operation
+    if (!props.map || !props.map.getSource || !props.map.getLayer) {
       return
     }
     
@@ -772,16 +777,20 @@ const removePOILayer = () => {
     currentPopup = null
   }
 
-  if (props.map.getLayer('poi-points')) {
-    props.map.removeLayer('poi-points')
-  }
-  if (props.map.getSource('pois')) {
-    props.map.removeSource('pois')
+  try {
+    if (props.map && props.map.getLayer && props.map.getLayer('poi-points')) {
+      props.map.removeLayer('poi-points')
+    }
+    if (props.map && props.map.getSource && props.map.getSource('pois')) {
+      props.map.removeSource('pois')
+    }
+  } catch (error) {
+    // Silently ignore errors during cleanup - map might already be destroyed
   }
 }
 
 const updateFilter = () => {
-  if (!props.map || !props.map.getLayer('poi-points')) {
+  if (!props.map || !props.map.getLayer || !props.map.getLayer('poi-points')) {
     return
   }
 
