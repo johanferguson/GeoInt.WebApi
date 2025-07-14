@@ -6,6 +6,7 @@
 import { watch, onMounted, onUnmounted } from 'vue'
 import { Popup, LngLatBounds } from 'maplibre-gl'
 import { usePOI } from '../../composables/usePOI'
+import { POI_CATEGORY_COLORS } from '../../constants/poiCategories'
 
 interface Props {
   map: any
@@ -360,32 +361,7 @@ const showToast = (message: string, type: 'success' | 'error' = 'success') => {
 ;(window as any).closeErrorModal = closeErrorModal
 ;(window as any).showToast = showToast
 
-// Category colors mapping - same as in CategoryFilter
-const categoryColors: Record<string, string> = {
-  facility: '#3b82f6',
-  restaurant: '#ef4444',
-  service: '#10b981',
-  'shopping centre': '#f59e0b',
-  'petrol station': '#8b5cf6',
-  takeaway: '#f97316',
-  transport: '#06b6d4',
-  security: '#dc2626',
-  parking: '#6b7280',
-  library: '#7c3aed',
-  'police station': '#1f2937',
-  information: '#059669',
-  business: '#0ea5e9',
-  'shopping mall': '#eab308',
-  monument: '#84cc16',
-  hospital: '#ec4899',
-  skyscraper: '#64748b',
-  pub: '#f59e0b',
-  'convention centre': '#8b5cf6',
-  'government building': '#374151',
-  management: '#6366f1',
-  park: '#22c55e',
-  default: '#6b7280'
-}
+
 
 const addPOILayer = async (shouldAutoZoom: boolean = true, useReactiveData: boolean = false) => {
   if (!props.map || !props.isMapLoaded || !props.map.getSource || !props.map.getLayer || !props.map.addSource) {
@@ -458,9 +434,9 @@ const addPOILayer = async (shouldAutoZoom: boolean = true, useReactiveData: bool
         'circle-radius': 8,
         'circle-color': [
           'case',
-          ['has', ['downcase', ['get', 'category']], ['literal', categoryColors]],
-          ['get', ['downcase', ['get', 'category']], ['literal', categoryColors]],
-          categoryColors.default
+          ['has', ['downcase', ['get', 'category']], ['literal', POI_CATEGORY_COLORS]],
+          ['get', ['downcase', ['get', 'category']], ['literal', POI_CATEGORY_COLORS]],
+          POI_CATEGORY_COLORS.default
         ],
         'circle-stroke-width': 2,
         'circle-stroke-color': '#ffffff'
@@ -479,7 +455,7 @@ const addPOILayer = async (shouldAutoZoom: boolean = true, useReactiveData: bool
       
       const coordinates = e.features[0].geometry.coordinates.slice()
       const properties = e.features[0].properties
-      const categoryColor = categoryColors[properties.category.toLowerCase()] || categoryColors.default
+      const categoryColor = POI_CATEGORY_COLORS[properties.category.toLowerCase()] || POI_CATEGORY_COLORS.default
 
       // Create stylish popup content with animations and transparency
       const popupContent = `

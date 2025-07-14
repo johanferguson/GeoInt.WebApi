@@ -159,7 +159,7 @@
             <POITableRow
               v-if="isAddingPOI"
               :is-adding="true"
-              :category-colors="categoryColors"
+              :category-colors="POI_CATEGORY_COLORS"
               @add-save="handleAddSave"
               @add-cancel="handleAddCancel"
             />
@@ -170,7 +170,7 @@
               :key="poi.id"
               :poi="poi"
               :is-selected="selectedPOIs.includes(poi.id)"
-              :category-colors="categoryColors"
+              :category-colors="POI_CATEGORY_COLORS"
               @select="togglePOISelection"
               @edit="handleEdit"
               @delete="handleDelete"
@@ -300,35 +300,9 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { usePOI } from '../../composables/usePOI'
 import { useNotifications } from '../../composables/useNotifications'
 import { POI } from '../../entities/POI'
+import { POI_CATEGORY_COLORS } from '../../constants/poiCategories'
 import LoadingSpinner from '../common/LoadingSpinner.vue'
 import POITableRow from './POITableRow.vue'
-
-// Category colors mapping - same as in map components
-const categoryColors: Record<string, string> = {
-  facility: '#3b82f6',
-  restaurant: '#ef4444',
-  service: '#10b981',
-  'shopping centre': '#f59e0b',
-  'petrol station': '#8b5cf6',
-  takeaway: '#f97316',
-  transport: '#06b6d4',
-  security: '#dc2626',
-  parking: '#6b7280',
-  library: '#7c3aed',
-  'police station': '#1f2937',
-  information: '#059669',
-  business: '#0ea5e9',
-  'shopping mall': '#eab308',
-  monument: '#84cc16',
-  hospital: '#ec4899',
-  skyscraper: '#64748b',
-  pub: '#f59e0b',
-  'convention centre': '#8b5cf6',
-  'government building': '#374151',
-  management: '#6366f1',
-  park: '#22c55e',
-  default: '#6b7280'
-}
 
 const { 
   pois, 
