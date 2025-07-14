@@ -91,7 +91,14 @@ services:
       context: ./GeoInt.Web.UI
       dockerfile: Dockerfile
       pull: false
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+      extra_hosts:
+        - "host.docker.internal:host-gateway"
     container_name: geoint-frontend
+    environment:
+      - DOCKER_BUILDKIT=1
+      - BUILDKIT_PROGRESS=plain
     ports:
       - "5001:80"
     depends_on:
