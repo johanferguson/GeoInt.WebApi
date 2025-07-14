@@ -296,9 +296,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { usePOI } from '../../composables/usePOI'
 import { useNotifications } from '../../composables/useNotifications'
+import { usePOITableSearch } from '../../composables/usePOITableSearch'
+import { usePOITableSort } from '../../composables/usePOITableSort'
+import { usePOITablePagination } from '../../composables/usePOITablePagination'
+import { usePOITableSelection } from '../../composables/usePOITableSelection'
 import { POI } from '../../entities/POI'
 import { POI_CATEGORY_COLORS } from '../../constants/poiCategories'
 import LoadingSpinner from '../common/LoadingSpinner.vue'
@@ -320,96 +324,35 @@ const {
 const { showSuccess, showError } = useNotifications()
 
 // Local state
-const searchTerm = ref('')
-const selectedPOIs = ref<string[]>([])
-const showBulkDeleteModal = ref(false)
 const isAddingPOI = ref(false)
 const csvFileInput = ref<HTMLInputElement | null>(null)
-const sortField = ref<keyof POI | null>(null)
-const sortDirection = ref<'asc' | 'desc'>('asc')
-const currentPage = ref(1)
-const pageSize = ref<number>(10)
 
-// Computed properties
-const filteredPOIs = computed(() => {
-  let filtered = pois.value
-
-  // Apply search filter
-  if (searchTerm.value.trim()) {
-    const search = searchTerm.value.toLowerCase()
-    filtered = filtered.filter(poi => 
-      poi.name.toLowerCase().includes(search) ||
-      poi.category.toLowerCase().includes(search)
-    )
-  }
-
-  // Apply sorting
-  if (sortField.value) {
-    filtered = [...filtered].sort((a, b) => {
-      const aVal = a[sortField.value!]
-      const bVal = b[sortField.value!]
-      
-      if (aVal < bVal) return sortDirection.value === 'asc' ? -1 : 1
-      if (aVal > bVal) return sortDirection.value === 'asc' ? 1 : -1
-      return 0
-    })
-  }
-
-  return filtered
-})
-
-const totalPages = computed(() => Math.ceil(filteredPOIs.value.length / Number(pageSize.value)))
-const startIndex = computed(() => (currentPage.value - 1) * Number(pageSize.value))
-const endIndex = computed(() => Math.min(startIndex.value + Number(pageSize.value), filteredPOIs.value.length))
-
-const paginatedPOIs = computed(() => {
-  const size = Number(pageSize.value)
-  const start = (currentPage.value - 1) * size
-  const end = Math.min(start + size, filteredPOIs.value.length)
-  // Create a shallow copy to avoid affecting original data
-  return [...filteredPOIs.value].slice(start, end)
-})
-
-const isAllSelected = computed(() => {
-  return filteredPOIs.value.length > 0 && selectedPOIs.value.length === filteredPOIs.value.length
-})
-
-const visiblePages = computed(() => {
-  const pages: (number | string)[] = []
-  const total = totalPages.value
-  const current = currentPage.value
-
-  if (total <= 7) {
-    // Show all pages
-    for (let i = 1; i <= total; i++) {
-      pages.push(i)
-    }
-  } else {
-    // Show abbreviated pagination
-    pages.push(1)
-    
-    if (current > 4) {
-      pages.push('...')
-    }
-    
-    const start = Math.max(2, current - 1)
-    const end = Math.min(total - 1, current + 1)
-    
-    for (let i = start; i <= end; i++) {
-      pages.push(i)
-    }
-    
-    if (current < total - 3) {
-      pages.push('...')
-    }
-    
-    if (total > 1) {
-      pages.push(total)
-    }
-  }
-  
-  return pages
-})
+// Composables
+const { searchTerm, filteredPOIs } = usePOITableSearch(pois)
+const { sortField, sortDirection, sortedPOIs, handleSort } = usePOITableSort(filteredPOIs)
+const { 
+  currentPage, 
+  pageSize, 
+  totalPages, 
+  startIndex, 
+  endIndex, 
+  paginatedPOIs, 
+  visiblePages,
+  previousPage,
+  nextPage,
+  goToPage,
+  handlePageSizeChange
+} = usePOITablePagination(sortedPOIs)
+const {
+  selectedPOIs,
+  showBulkDeleteModal,
+  isAllSelected,
+  toggleSelectAll,
+  togglePOISelection,
+  showBulkDeleteConfirmation,
+  cancelBulkDelete,
+  clearSelection
+} = usePOITableSelection(filteredPOIs)
 
 // Methods
 const startAddingPOI = () => {
@@ -456,47 +399,15 @@ const handleCancel = () => {
   // Handled by individual table rows
 }
 
-const handleSort = (field: keyof POI) => {
-  if (sortField.value === field) {
-    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
-  } else {
-    sortField.value = field
-    sortDirection.value = 'asc'
-  }
-}
 
-const toggleSelectAll = () => {
-  if (isAllSelected.value) {
-    selectedPOIs.value = []
-  } else {
-    selectedPOIs.value = filteredPOIs.value.map(poi => poi.id)
-  }
-}
-
-const togglePOISelection = (poiId: string) => {
-  const index = selectedPOIs.value.indexOf(poiId)
-  if (index > -1) {
-    selectedPOIs.value.splice(index, 1)
-  } else {
-    selectedPOIs.value.push(poiId)
-  }
-}
-
-const showBulkDeleteConfirmation = () => {
-  showBulkDeleteModal.value = true
-}
-
-const cancelBulkDelete = () => {
-  showBulkDeleteModal.value = false
-}
 
 const confirmBulkDelete = async () => {
   try {
     for (const poiId of selectedPOIs.value) {
       await deletePOI(poiId)
     }
-    selectedPOIs.value = []
-    showBulkDeleteModal.value = false
+    clearSelection()
+    cancelBulkDelete()
     showSuccess('POIs deleted successfully')
   } catch (error) {
     // Error is already handled by usePOI composable
@@ -522,44 +433,12 @@ const handleCSVImport = async (event: Event) => {
   }
 }
 
-const previousPage = () => {
-  if (currentPage.value > 1) {
-    currentPage.value--
-  }
-}
 
-const nextPage = () => {
-  if (currentPage.value < totalPages.value) {
-    currentPage.value++
-  }
-}
-
-const goToPage = (page: number | string) => {
-  if (typeof page === 'number') {
-    currentPage.value = page
-  }
-}
-
-const handlePageSizeChange = (event: Event) => {
-  const target = event.target as HTMLSelectElement
-  pageSize.value = Number(target.value)
-  currentPage.value = 1
-}
-
-// Page size changes are handled by handlePageSizeChange method
 
 // Watch for search changes and reset to page 1
 watch(searchTerm, () => {
   currentPage.value = 1
 })
-
-// Watch for filtered POIs changes and adjust current page if needed
-watch(filteredPOIs, (newPOIs) => {
-  const maxPage = Math.ceil(newPOIs.length / Number(pageSize.value))
-  if (currentPage.value > maxPage && maxPage > 0) {
-    currentPage.value = maxPage
-  }
-}, { immediate: true })
 
 // Initialize
 onMounted(() => {
