@@ -98,7 +98,6 @@ const handleFormSubmit = async (data: { name: string; category: string; coordina
     }
     
   } catch (error) {
-    console.error('Error creating POI:', error)
     // Show error toast
     const showToast = (window as any).showToast
     if (showToast) {

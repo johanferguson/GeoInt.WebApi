@@ -21,9 +21,6 @@ export class POIRepository implements IPOIRepository {
   }
 
   async create(poi: Omit<POI, 'id' | 'created_at' | 'modified_at' | 'deleted_at'>): Promise<POI> {
-    console.log('POIRepository: Creating POI with data:', poi)
-    console.log('POIRepository: Sending to API:', JSON.stringify(poi))
-    
     const response = await fetch(this.baseUrl, {
       method: 'POST',
       headers: {
@@ -32,17 +29,11 @@ export class POIRepository implements IPOIRepository {
       body: JSON.stringify(poi),
     })
     
-    console.log('POIRepository: API response status:', response.status)
-    
     if (!response.ok) {
-      const errorText = await response.text()
-      console.error('POIRepository: API error response:', errorText)
       throw new Error(`HTTP error! status: ${response.status}`)
     }
     
-    const result = await response.json()
-    console.log('POIRepository: API returned:', result)
-    return result
+    return response.json()
   }
 
   async update(poi: POI): Promise<POI> {

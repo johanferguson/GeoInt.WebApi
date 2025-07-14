@@ -68,13 +68,11 @@ export function useMap(container: Ref<HTMLElement | null>, options?: Partial<Map
       // Handle map errors
       mapInstance.on('error', (e) => {
         error.value = e.error?.message || 'Map error occurred'
-        console.error('Map error:', e)
       })
 
       map.value = mapInstance
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to initialize map'
-      console.error('Map initialization error:', err)
     }
   })
 

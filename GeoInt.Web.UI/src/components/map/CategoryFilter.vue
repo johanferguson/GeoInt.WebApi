@@ -155,7 +155,6 @@ const handleBlur = (event: FocusEvent) => {
 }
 
 const selectCategory = (category: string | null) => {
-  console.log('CategoryFilter: Selecting category:', category)
   selectedCategory.value = category
   isOpen.value = false
   
@@ -186,23 +185,19 @@ const handleClickOutside = (event: MouseEvent) => {
 
 // Watch for external changes to selectedCategory
 watch(() => selectedCategory.value, (newValue, oldValue) => {
-  console.log('CategoryFilter: selectedCategory changed from', oldValue, 'to', newValue)
+  // selectedCategory change handling
 })
 
-// Watch for POI changes to debug category updates
+// Watch for POI changes to update categories
 watch(() => pois.value.length, (newLength, oldLength) => {
-  console.log('CategoryFilter: POI count changed from', oldLength, 'to', newLength)
-  console.log('CategoryFilter: Categories updated:', categories.value)
+  // POI count change handling
 })
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
   // Load POIs when component mounts (only if not already loaded)
   if (pois.value.length === 0) {
-    console.log('CategoryFilter: Loading POIs since array is empty')
     loadPOIs()
-  } else {
-    console.log('CategoryFilter: POIs already loaded, count:', pois.value.length)
   }
 })
 

@@ -189,7 +189,6 @@ const confirmDeletePOI = async (poiId: string, poiName: string) => {
   closeDeleteModal()
   
   try {
-    console.log('Deleting POI:', poiId, poiName)
     await deletePOI(poiId)
     
     // Close the current popup
@@ -208,7 +207,6 @@ const confirmDeletePOI = async (poiId: string, poiName: string) => {
     showToast(`"${poiName}" has been deleted successfully`, 'success')
     
   } catch (error) {
-    console.error('Error deleting POI:', error)
     // Show error toast
     showToast('Failed to delete POI. Please try again.', 'error')
   }
@@ -391,43 +389,28 @@ const categoryColors: Record<string, string> = {
 
 const addPOILayer = async (shouldAutoZoom: boolean = true, useReactiveData: boolean = false) => {
   if (!props.map || !props.isMapLoaded) {
-    console.log('Map not ready:', { map: !!props.map, isMapLoaded: props.isMapLoaded })
     return
   }
 
   try {
-    console.log('Loading POI GeoJSON data...')
     // Load GeoJSON data - use reactive data for immediate updates, API data for initial load
     if (useReactiveData) {
-      console.log('addPOILayer: Using reactive data for immediate update')
       geoJsonData = getPOIsAsGeoJsonFromArray()
-      console.log('POI GeoJSON data from reactive array:', geoJsonData)
     } else {
-      console.log('addPOILayer: Using API data for initial load')
       geoJsonData = await getPOIsAsGeoJson()
-      console.log('POI GeoJSON data loaded from API:', geoJsonData)
     }
     
     if (!geoJsonData || !geoJsonData.features || geoJsonData.features.length === 0) {
-      console.warn('No POI data found or empty features array')
       return
     }
-
-    console.log(`Adding ${geoJsonData.features.length} POI features to map`)
     
     // Check if source already exists and update it, otherwise create new
     if (props.map.getSource('pois')) {
-      console.log('Updating existing POI source with', geoJsonData.features.length, 'features')
-      
       // Try using setData method first
       try {
         props.map.getSource('pois').setData(geoJsonData)
-        console.log('Successfully updated POI source data using setData')
       } catch (error) {
-        console.error('Error updating POI source with setData:', error)
-        
         // Fallback: remove and re-add the source
-        console.log('Falling back to remove/re-add approach')
         if (props.map.getLayer('poi-points')) {
           props.map.removeLayer('poi-points')
         }
@@ -437,7 +420,6 @@ const addPOILayer = async (shouldAutoZoom: boolean = true, useReactiveData: bool
           type: 'geojson',
           data: geoJsonData
         })
-        console.log('POI source re-added to map with', geoJsonData.features.length, 'features')
       }
       
       // Force map to repaint to ensure visual update
@@ -445,13 +427,10 @@ const addPOILayer = async (shouldAutoZoom: boolean = true, useReactiveData: bool
       
       // If layer already exists, we're done
       if (props.map.getLayer('poi-points')) {
-        console.log('POI layer already exists, data updated successfully')
-        
         // Force layer to re-render by toggling visibility
         props.map.setLayoutProperty('poi-points', 'visibility', 'none')
         setTimeout(() => {
           props.map.setLayoutProperty('poi-points', 'visibility', 'visible')
-          console.log('POI layer visibility toggled to force re-render')
         }, 50)
         
         return
@@ -462,7 +441,6 @@ const addPOILayer = async (shouldAutoZoom: boolean = true, useReactiveData: bool
         type: 'geojson',
         data: geoJsonData
       })
-      console.log('POI source added to map with', geoJsonData.features.length, 'features')
     }
 
     // Add circle layer for POI points with category-based colors (only if it doesn't exist)
@@ -483,13 +461,10 @@ const addPOILayer = async (shouldAutoZoom: boolean = true, useReactiveData: bool
         'circle-stroke-color': '#ffffff'
       }
     })
-
-    console.log('POI points layer added to map')
     }
 
     // Add click handler for popups
     props.map.on('click', 'poi-points', (e: any) => {
-      console.log('POI clicked:', e.features[0])
       
       // Close any existing popup before opening a new one
       if (currentPopup) {
@@ -764,11 +739,8 @@ const addPOILayer = async (shouldAutoZoom: boolean = true, useReactiveData: bool
       
       geoJsonData.features.forEach((feature: any) => {
         const coords = feature.geometry.coordinates
-        console.log('Adding coordinates to bounds:', coords)
         bounds.extend(coords)
       })
-      
-      console.log('Auto-zooming to POI bounds:', bounds)
       props.map.fitBounds(bounds, {
         padding: 50,
         maxZoom: 15
@@ -779,7 +751,6 @@ const addPOILayer = async (shouldAutoZoom: boolean = true, useReactiveData: bool
     const handleMapClick = (e: any) => {
       if (props.isAddMode) {
         const coordinates: [number, number] = [e.lngLat.lng, e.lngLat.lat]
-        console.log('Map clicked in add mode:', coordinates)
         emit('coordinates-selected', coordinates)
       }
     }
@@ -787,10 +758,8 @@ const addPOILayer = async (shouldAutoZoom: boolean = true, useReactiveData: bool
     // Add click handler to map
     props.map.on('click', handleMapClick)
 
-    console.log('POI layer setup complete')
-
   } catch (error) {
-    console.error('Error adding POI layer:', error)
+    // Error adding POI layer
   }
 }
 
@@ -813,33 +782,27 @@ const removePOILayer = () => {
 
 const updateFilter = () => {
   if (!props.map || !props.map.getLayer('poi-points')) {
-    console.log('Cannot update filter - map or layer not ready')
     return
   }
-
-  console.log('Updating filter with category:', props.selectedCategory)
 
   try {
     if (props.selectedCategory && props.selectedCategory.trim() !== '') {
       // Create case-insensitive filter
       const filter = ['==', ['downcase', ['get', 'category']], props.selectedCategory.toLowerCase()]
-      console.log('Applying filter:', filter)
       props.map.setFilter('poi-points', filter)
     } else {
-      console.log('Removing filter - showing all POIs')
       props.map.setFilter('poi-points', null)
     }
     
     // Force map to repaint to ensure changes are visible
     props.map.triggerRepaint()
   } catch (error) {
-    console.error('Error updating filter:', error)
+    // Error updating filter
   }
 }
 
 // Watch for map load state
 watch(() => props.isMapLoaded, (loaded) => {
-  console.log('Map loaded state changed:', loaded)
   if (loaded) {
     addPOILayer(true) // Auto-zoom on initial load
   }
@@ -847,7 +810,6 @@ watch(() => props.isMapLoaded, (loaded) => {
 
 // Watch for category filter changes
 watch(() => props.selectedCategory, (newCategory, oldCategory) => {
-  console.log('Category filter changed from', oldCategory, 'to', newCategory)
   // Add a small delay to ensure the map is ready
   setTimeout(() => {
     updateFilter()
@@ -856,18 +818,15 @@ watch(() => props.selectedCategory, (newCategory, oldCategory) => {
 
 // Watch for POI data changes and refresh the layer
 watch(() => pois.value.length, (newLength, oldLength) => {
-  console.log('POI count changed from', oldLength, 'to', newLength, '- refreshing map layer')
   if (props.isMapLoaded && props.map && newLength !== oldLength && newLength > oldLength) {
-          // Refresh the POI layer with reactive data for immediate update
-      setTimeout(() => {
-        console.log('Calling addPOILayer with reactive data...')
-        addPOILayer(false, true) // false = don't auto-zoom, true = use reactive data
-      }, 100)
+    // Refresh the POI layer with reactive data for immediate update
+    setTimeout(() => {
+      addPOILayer(false, true) // false = don't auto-zoom, true = use reactive data
+    }, 100)
   }
 }, { immediate: false })
 
 onMounted(() => {
-  console.log('POILayer mounted, map loaded:', props.isMapLoaded)
   if (props.isMapLoaded) {
     addPOILayer(true) // Auto-zoom on initial mount
   }
